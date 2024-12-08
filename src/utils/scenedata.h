@@ -128,6 +128,8 @@ struct SceneMaterial {
     SceneColor cEmissive; // Not used
     SceneFileMap bumpMap; // Not used
 
+    float density = 10000;
+
     void clear()
     {
         cAmbient = glm::vec4(0);
@@ -156,7 +158,11 @@ struct IntersectionData {
     glm::vec2 uvCoords;
 };
 
+//Consuming some initial point P and vector ray direction D, return some IntersectionData object for the ScenePrimitive
 using ImplicitEquationSignature = auto(glm::vec4 p, glm::vec4 d)->IntersectionData;
+
+//Consuming some point P, return some transmission factor (sigma_a) for the ScenePrimitive at that point. Larger values = high density objects, 0 = transparent
+using ImplicitDensitySignature = auto(glm::vec4 p)->float;
 
 // Struct which contains data for a single primitive in a scene
 struct ScenePrimitive {
@@ -164,6 +170,7 @@ struct ScenePrimitive {
     SceneMaterial material;
     std::string meshfile; // Used for triangle meshes
     std::function<ImplicitEquationSignature> getIntersectData;
+    std::function<ImplicitDensitySignature> ImplicitDensitySignature;
 };
 
 
