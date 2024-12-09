@@ -44,6 +44,8 @@ add_executable(${PROJECT_NAME}
 
   src/utils/imagereader.h src/utils/imagereader.cpp
   src/utils/shapes.h
+  src/raytracer/raymarchingparameters.h
+  src/raytracer/blackhole.h src/raytracer/blackhole.cpp
 
 )
 
