@@ -493,9 +493,35 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
             // pixelResult += scene.getGlobalData().ka * scene.getShapes().at(highestDensityIdx).primitive.material.cAmbient * stepSize;
         }
 
+        // Run black hole geodesic integration here
+        float t,r,theta,phi;
+        this->m_blackHole.getSchwarzchildMetric(t,r,theta,phi);
+        glm::mat4 tetradBasis = m_blackHole.getTetradBasis(t,r,theta,phi);
+
+        // convert ray such that z points to the black hole
+
+        glm::vec4 position = rayEndpoint;
+        glm::vec4 direction = {-1,-rayDirection[2], rayDirection[1], rayDirection[0]};
+        direction = tetradBasis * direction;
+
+        // Calculate new ray direction, normalize velocity to the speed of light
+
+        // aaaahh
+
+        // For now we're going ot go with literally the simplest way of rendering it possible.
+        // We're literally going to just... pull the ray towards the singularity.
+
+        float G = 0.1;
+        glm::vec4 singDir = glm::normalize(rayEndpoint - m_blackHole.position);
+        float singDistance = glm::length(rayEndpoint - m_blackHole.position);
+        glm::vec4 pull = G/(singDistance*singDistance) * singDir;
+
+        if(singDistance < 1){
+            return {0,0,0,1};
+        }
 
 
-        return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult);
+        return recurRayMarch(rayEndpoint, rayDirection + pull, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult);
     }
 }
 

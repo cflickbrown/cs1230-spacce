@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include "raytracer/blackhole.h"
 #include "utils/rgba.h"
 #include "utils/scenedata.h"
 #include "utils/sceneparser.h"
@@ -56,5 +57,6 @@ public:
 
 private:
     const Config m_config;
+    BlackHole m_blackHole;
 };
 

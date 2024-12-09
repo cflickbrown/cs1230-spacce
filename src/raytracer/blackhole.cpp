@@ -23,6 +23,47 @@ glm::mat4 BlackHole::getSchwarzchildMetric(float r, float theta, float phi, floa
     };
 }
 
+glm::mat4 BlackHole::getTetradBasis(float r, float theta, float phi, float t){
+    glm::mat4 tetradSet = {
+        1/(1 - sqrt(rs/r)), 0, 0, 0,
+        0, sqrt(1 - (rs/r)), 0, 0,
+        0, 0, rs/r, 0,
+        0, 0, 0, 1/(r*sin(theta))
+    };
+}
+
+auto getGradient(auto&& function, glm::vec4 position, int dimension){
+    float epsilon = 0.0000001;
+    glm::vec4 delta = position;
+
+    delta[dimension] += epsilon;
+
+    return (function(delta) - function(position))/epsilon;
+}
+
+// There isn't a really good way of explaining this in the papers, as it is assumed as common
+// knowledge for the type of person for this type of paper. This is the one part that has tripped
+// me up every single time.
+std::vector<glm::mat4> BlackHole::calculateChristoffel(glm::vec4 position, glm::mat4 metric){
+    // get the metric
+    glm::mat4 metInv = glm::inverse(metric);
+
+    std::vector<glm::mat4> gamma;
+    gamma.assign(4,glm::mat4(0));
+
+    std::vector<glm::mat4> metricDifference;
+    metricDifference.assign(4,glm::mat4(0));
+
+    // Calculate the metric difference
+
+    // calculate the christoffel symbols per element
+
+    // Equation is:
+    // Gamma^mu_alpha,beta = 1/2 * sum sigma from 0->3 (g^mu,sigma * ())
+
+    // return
+}
+
 /**
      * @brief getBoyerLindquistCoordinate Converts a cartesian coordinate to Boyer Lindquist coordinates.
      * Less expensive than Kerr Schild coordinates but cannot be used within the outer event horizon.

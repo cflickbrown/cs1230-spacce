@@ -2,6 +2,7 @@
 #define BLACKHOLE_H
 
 #include <glm/glm.hpp>
+#include <vector>
 
 class BlackHole
 {
@@ -11,6 +12,11 @@ public:
     // One and done static methods
 
     static float getSchwarzchildRadius();
+
+    glm::mat4 getTetradBasis(float r, float theta, float phi, float t);
+
+    // Bit of a hack here but if we can approximate a 4x4x4 tensor with an array of 4x4 mats...
+    std::vector<glm::mat4> calculateChristoffel(glm::vec4 position, glm::mat4 metric);
 
     glm::mat4 getSchwarzchildMetric(float r, float theta, float phi, float t);
 
@@ -33,6 +39,15 @@ public:
      * @return A Kerr Schild coordinate
      */
     glm::vec4 getKerrSchildCoordinate(glm::vec4& cartesianCoordinate);
+
+    /**
+     * @brief stepLightlikeGeodesic
+     * @param position
+     * @param direction
+     * @return A homogenized direction vector for usage in standard spacetime-agnostic world-space coordinates.
+     * This contains the exact direction and magnitude of the step.
+     */
+    glm::vec4 stepLightlikeGeodesic(glm::vec4 position, glm::vec3 direction);
 
 
     // Getters/Setters
