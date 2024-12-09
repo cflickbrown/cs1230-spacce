@@ -53,6 +53,8 @@ public:
 
     glm::vec4 recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult);
 
+    glm::vec4 traceMarchOrBackground(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, std::vector<RenderShapeData> relevantShapes, int droppedShapeIdx, int recLevel, float transparency);
+
 
 private:
     const Config m_config;

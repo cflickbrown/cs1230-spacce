@@ -160,6 +160,7 @@ struct IntersectionData {
     float intersectT;
     glm::vec4 normAtIntForObj;
     glm::vec2 uvCoords;
+    bool solid = true;
 };
 
 //Consuming some initial point P and vector ray direction D, return some IntersectionData object for the ScenePrimitive

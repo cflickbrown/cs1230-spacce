@@ -10,7 +10,7 @@
 #include "scenedata.h"
 
 //absurdly large alpha to simulate solid-ness
-float SOLID_ALPHA = 2;
+float SOLID_ALPHA = 101;
 
 ScenePrimitive DensityCube(PrimitiveType type,
                          SceneMaterial material,
@@ -408,7 +408,8 @@ ScenePrimitive Cylinder(PrimitiveType type,
             //get the nearest intersect
             for(IntersectionData intersect : intersects) {
                 if(intersect.hasIntersect && intersect.intersectT < smallestIntersect.intersectT) {
-                    smallestIntersect = intersect;
+                    IntersectionData newInter = IntersectionData(intersect.hasIntersect, intersect.intersectT, intersect.normAtIntForObj, intersect.uvCoords, false);
+                    smallestIntersect = newInter;
                 }
             }
 
@@ -421,7 +422,7 @@ ScenePrimitive Cylinder(PrimitiveType type,
                 return 0.f;
             }
 
-            return SOLID_ALPHA;
+            return 1.f;
         }
     };
 }

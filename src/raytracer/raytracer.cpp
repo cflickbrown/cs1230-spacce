@@ -9,6 +9,10 @@ RayTracer::RayTracer(Config config) :
     m_config(config)
 {}
 
+float TRANSPARENCY_THRESH = 0.001;
+int STEP_THRESH = 300;
+glm::vec4 BACKGROUND_COLOR = glm::vec4(1,1,1,1);
+
 IntersectionData findIntersectDataForShape(RenderShapeData shape, glm::vec4 origin, glm::vec4 direction) {
     glm::mat4 objSpaceConv = glm::inverse(shape.ctm);
     glm::vec4 rayOriginInObj = objSpaceConv * origin;
@@ -108,7 +112,9 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
 
             // imageData[ri * scene.width() + ci] = toRGBA(recurRayTrace(cameraInWorld, rayDirInWorld, scene, scene.getShapes(), scene.getShapes().size(), 0));
 
-            imageData[ri * scene.width() + ci] = toRGBA(recurRayMarch(cameraInWorld, rayDirInWorld, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0)));
+            // imageData[ri * scene.width() + ci] = toRGBA(recurRayMarch(cameraInWorld, rayDirInWorld, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0)));
+            imageData[ri * scene.width() + ci] = toRGBA(traceMarchOrBackground(cameraInWorld, rayDirInWorld, scene, scene.getShapes(), scene.getShapes().size(), 0, 1.f));
+
         }
     }
 }
@@ -210,7 +216,7 @@ glm::vec4 RayTracer::PhongIllumination(glm::vec3  position,
         for(IntersectionData intersect : allPossibleIntersects) {
             //catch for if the light is closer to the origin than the ray intersection, and if the intersect is behind the point
             float distToIntersect = glm::distance(position + intersect.intersectT * pointToLight, position);
-            if(intersect.hasIntersect && intersect.intersectT > 0.0 && distToIntersect < distToLight) {
+            if(intersect.hasIntersect && intersect.intersectT > 0.0 && distToIntersect < distToLight && intersect.solid) {
                 shaded = true;
             }
         }
@@ -270,21 +276,51 @@ glm::vec4 RayTracer::PhongIllumination(glm::vec3  position,
         }
     }
 
-    //if there's a reflection, recur the raytrace and find the reflected value, adding it to the illumination
-    if(m_config.enableReflection && !glm::all(glm::equal(material.cReflective, glm::vec4(0,0,0,0)))) {
-        glm::vec3 directionFromOrigin = directionToOrigin;
-        directionFromOrigin *= -1;
-        glm::vec3 reflectRayDir = glm::normalize(directionFromOrigin)  - 2.f*glm::dot(directionFromOrigin, normal)*normal;
+    // //if there's a reflection, recur the raytrace and find the reflected value, adding it to the illumination
+    // if(m_config.enableReflection && !glm::all(glm::equal(material.cReflective, glm::vec4(0,0,0,0)))) {
+    //     glm::vec3 directionFromOrigin = directionToOrigin;
+    //     directionFromOrigin *= -1;
+    //     glm::vec3 reflectRayDir = glm::normalize(directionFromOrigin)  - 2.f*glm::dot(directionFromOrigin, normal)*normal;
 
-        glm::vec4 refIllum = recurRayTrace(glm::vec4(position, 1.f), glm::normalize(glm::vec4(reflectRayDir, 0.f)), scene, relevantShapes, droppedShapeIdx, recLevel + 1);
+    //     glm::vec4 refIllum = recurRayTrace(glm::vec4(position, 1.f), glm::normalize(glm::vec4(reflectRayDir, 0.f)), scene, relevantShapes, droppedShapeIdx, recLevel + 1);
 
-        illumination.r += globalData.ks * refIllum.r * material.cReflective.r;
-        illumination.g += globalData.ks * refIllum.g * material.cReflective.g;
-        illumination.b += globalData.ks * refIllum.b * material.cReflective.b;
-    }
+    //     illumination.r += globalData.ks * refIllum.r * material.cReflective.r;
+    //     illumination.g += globalData.ks * refIllum.g * material.cReflective.g;
+    //     illumination.b += globalData.ks * refIllum.b * material.cReflective.b;
+    // }
 
     return illumination;
 }
+
+
+
+glm::vec4 RayTracer::traceMarchOrBackground(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, std::vector<RenderShapeData> relevantShapes, int droppedShapeIdx, int recLevel, float transparency) {
+
+    std::vector<IntersectionData> smallestIntsForObjects(relevantShapes.size());
+
+    //iterate through all shapes
+    smallestIntsForObjects = findIntersectDataForShapes(relevantShapes, rayOrigin, rayDirection);
+
+    //select the nearest (smallest) intersect across all shapes for the ray
+    int nearestIntShapeIdx = -1;
+    IntersectionData nearestIntersect = IntersectionData(false, FLT_MAX, glm::vec4(0));
+    for(int i = 0; i < smallestIntsForObjects.size(); i++) {
+        if(smallestIntsForObjects[i].hasIntersect && smallestIntsForObjects[i].intersectT < nearestIntersect.intersectT && smallestIntsForObjects[i].intersectT > 0) {
+            nearestIntersect = smallestIntsForObjects[i];
+            nearestIntShapeIdx = i;
+        }
+    }
+
+    if(nearestIntShapeIdx < 0) {
+        return BACKGROUND_COLOR;
+    } else if (nearestIntersect.solid) {
+        return recurRayTrace(rayOrigin, rayDirection, scene, relevantShapes, droppedShapeIdx, recLevel);
+    } else {
+        return recurRayMarch(rayOrigin, rayDirection, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0));
+    }
+
+}
+
 
 
 /**
@@ -355,7 +391,6 @@ glm::vec4 RayTracer::recurRayTrace(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
                                                                       nearestIntShapeIdx,
                                                                       scene,
                                                                       recLevel);
-
             return illuminatedPixel;
         }
     } else {
@@ -422,10 +457,6 @@ std::vector<float> findDensityDataForShapes(std::vector<RenderShapeData> shapes,
  * @return a vector representing the illumination values seen by the ray at some origin
  */
 
-float TRANSPARENCY_THRESH = 0.001;
-int STEP_THRESH = 300;
-glm::vec4 BACKGROUND_COLOR = glm::vec4(0,0,0,1);
-
 glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult) {
     if(transparency < TRANSPARENCY_THRESH) {
         return glm::vec4(glm::vec3(pixelResult), 1);
@@ -447,7 +478,7 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
 
         //select the highest density across all shapes
         int highestDensityIdx = 0;
-        float highestDensity = 0.f;
+        float highestDensity = 0;
         for(int i = 0; i < objectDensities.size(); i++) {
             if(objectDensities[i] > highestDensity) {
                 highestDensity = objectDensities[i];
@@ -458,9 +489,52 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
         //do lighting stuff for that object
 
         float currentTransparency = transparency;
+        if (highestDensity > 100) {
+            //object is basically solid, treat it as such
 
-        if(highestDensity > 0) {
+            std::vector<RenderShapeData> relevantShapes = scene.getShapes();
+            glm::vec4 cameraInWorld = glm::inverse(scene.getCamera().getViewMatrix()) * glm::vec4(0,0,0,1);
 
+            IntersectionData intForObj = findIntersectDataForShape(scene.getShapes()[highestDensityIdx], cameraInWorld, rayDirection);
+
+            RenderShapeData intersectedShape = relevantShapes[highestDensityIdx];
+
+            //get normal at intersect point, the intersect point, and the direction from the intersect point to the origin in world space
+            glm::vec3 normalInWorld = glm::inverse(glm::transpose(intersectedShape.ctm)) * intForObj.normAtIntForObj;
+            glm::vec3 intPointInWorld = cameraInWorld + intForObj.intersectT * rayDirection;
+            glm::vec3 intToOriginInWorld = glm::normalize(glm::vec3(cameraInWorld) - intPointInWorld);
+
+            std::vector<SceneLightData> useLights = scene.getLights();
+
+            //get the set of relevant shapes, which are all shapes except the one currently intersected by the ray
+            std::vector<RenderShapeData> newRelevantShapes = scene.getShapes();
+
+            newRelevantShapes.erase(newRelevantShapes.begin() + highestDensityIdx);
+
+            if(m_config.onlyRenderNormals) {
+                int normaledRed = fmin(255, 255 * (normalInWorld.r + 1) / 2);
+                int normaledGreen = fmin(255, 255 * (normalInWorld.g + 1) / 2);
+                int normaledBlue = fmin(255, 255 * (normalInWorld.b + 1) / 2);
+                return glm::vec4(normaledRed/255.0, normaledGreen/255.0, normaledBlue/255.0, 0.f);
+            }
+
+            glm::vec4 illuminatedPixel = RayTracer::PhongIllumination(intPointInWorld,
+                                                                      normalInWorld,
+                                                                      intToOriginInWorld,
+                                                                      intersectedShape.primitive.material,
+                                                                      intForObj.uvCoords,
+                                                                      useLights,
+                                                                      scene.getGlobalData(),
+                                                                      newRelevantShapes,
+                                                                      highestDensityIdx,
+                                                                      scene,
+                                                                      0);
+
+            //todo: blend!
+            pixelResult += transparency * illuminatedPixel;
+            return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, 0, pixelResult);
+
+        } else if(highestDensity > 0) {
             //do lighting...
 
             float attentuationAtPoint = exp(-stepSize * highestDensity);
@@ -501,5 +575,6 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
 
 //TODO:
 //- better lighting effects
+    //shadows for
 //- speed-ups (skip pixels with no intersects)
 
