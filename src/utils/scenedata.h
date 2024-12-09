@@ -23,7 +23,11 @@ enum class PrimitiveType {
     PRIMITIVE_CONE,
     PRIMITIVE_CYLINDER,
     PRIMITIVE_SPHERE,
-    PRIMITIVE_MESH
+    PRIMITIVE_MESH,
+    PRIMITIVE_DENSITY_CUBE,
+    PRIMITIVE_DENSITY_CONE,
+    PRIMITIVE_DENSITY_CYLINDER,
+    PRIMITIVE_DENSITY_SPHERE
 };
 
 // Enum of the types of transformations that can be applied
@@ -170,7 +174,7 @@ struct ScenePrimitive {
     SceneMaterial material;
     std::string meshfile; // Used for triangle meshes
     std::function<ImplicitEquationSignature> getIntersectData;
-    std::function<ImplicitDensitySignature> ImplicitDensitySignature;
+    std::function<ImplicitDensitySignature> getDensityData;
 };
 
 

@@ -9,6 +9,9 @@
 
 #include "scenedata.h"
 
+//absurdly large alpha to simulate solid-ness
+float SOLID_ALPHA = 2;
+
 ScenePrimitive DensityCube(PrimitiveType type,
                          SceneMaterial material,
                          std::string meshfile) {
@@ -98,8 +101,7 @@ ScenePrimitive DensityCone(PrimitiveType type,
 
 
 
-//absurdly large alpha to simulate solid-ness
-float SOLID_ALPHA = 10000;
+
 
 ScenePrimitive SolidCube(PrimitiveType type,
                          SceneMaterial material,
@@ -244,6 +246,15 @@ ScenePrimitive Cube(PrimitiveType type,
             }
 
             return smallestIntersect;
+        },
+        [=](glm::vec4 p) {
+
+            //if point outside the object, then object does not add anything
+            if(p.x > 0.5 || p.x < -0.5 || p.y > 0.5 || p.y < -0.5 || p.z > 0.5 || p.z < -0.5) {
+                return 0.f;
+            }
+
+            return SOLID_ALPHA;
         }
     };
 }
@@ -304,6 +315,15 @@ ScenePrimitive Sphere(PrimitiveType type,
             } else {
                 return IntersectionData(false, FLT_MAX, glm::vec4(0));
             }
+        },
+        [=](glm::vec4 p) {
+
+            //if point outside the object, then object does not add anything
+            if(sqrt((p.x * p.x) + (p.y * p.y) + (p.z * p.z)) > 0.5) {
+                return 0.f;
+            }
+
+            return SOLID_ALPHA;
         }
     };
 }
@@ -393,6 +413,15 @@ ScenePrimitive Cylinder(PrimitiveType type,
             }
 
             return smallestIntersect;
+        },
+        [=](glm::vec4 p) {
+
+            //if point outside the object, then object does not add anything
+            if(sqrt((p.x * p.x) + (p.z * p.z)) > 0.5 || p.y < -0.5 || p.y > 0.5) {
+                return 0.f;
+            }
+
+            return SOLID_ALPHA;
         }
     };
 }
@@ -479,6 +508,15 @@ ScenePrimitive Cone(PrimitiveType type,
             }
 
             return smallestIntersect;
+        },
+        [=](glm::vec4 p) {
+
+            //if point outside the object, then object does not add anything
+            if(sqrt((p.x * p.x) + (p.z * p.z)) > (0.5 - ((p.y + 0.5)/2)) || p.y < -0.5 || p.y > 0.5) {
+                return 0.f;
+            }
+
+            return SOLID_ALPHA;
         }
     };
 }

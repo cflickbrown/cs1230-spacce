@@ -9,6 +9,35 @@ RayTracer::RayTracer(Config config) :
     m_config(config)
 {}
 
+IntersectionData findIntersectDataForShape(RenderShapeData shape, glm::vec4 origin, glm::vec4 direction) {
+    glm::mat4 objSpaceConv = glm::inverse(shape.ctm);
+    glm::vec4 rayOriginInObj = objSpaceConv * origin;
+    glm::vec4 rayDirInObj = objSpaceConv * direction;
+
+    float bestTForObj;
+    ScenePrimitive currPrimitive;
+
+    //set shape to be some specific primitive
+    switch(shape.primitive.type) {
+    case PrimitiveType::PRIMITIVE_CUBE:
+        currPrimitive = Cube(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+        break;
+    case PrimitiveType::PRIMITIVE_SPHERE:
+        currPrimitive = Sphere(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+        break;
+    case PrimitiveType::PRIMITIVE_CYLINDER:
+        currPrimitive = Cylinder(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+        break;
+    case PrimitiveType::PRIMITIVE_CONE:
+        currPrimitive = Cone(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+        break;
+    default:
+        break;
+    }
+
+    return currPrimitive.getIntersectData(rayOriginInObj, rayDirInObj);
+}
+
 /**
  * @brief findIntersectDataForShapes gets all nearest intersections for a ray through a list of shapes
  * @param shapes a list of shapes to be intersected
@@ -22,34 +51,8 @@ std::vector<IntersectionData> findIntersectDataForShapes(std::vector<RenderShape
     for (int i = 0; i < shapes.size(); i++) {
         RenderShapeData shape = shapes[i];
 
-        //get origin, ray direcion in object space
-        glm::mat4 objSpaceConv = glm::inverse(shape.ctm);
-        glm::vec4 rayOriginInObj = objSpaceConv * origin;
-        glm::vec4 rayDirInObj = objSpaceConv * direction;
-
-        float bestTForObj;
-        ScenePrimitive currPrimitive;
-
-        //set shape to be some specific primitive
-        switch(shape.primitive.type) {
-        case PrimitiveType::PRIMITIVE_CUBE:
-            currPrimitive = Cube(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
-            break;
-        case PrimitiveType::PRIMITIVE_SPHERE:
-            currPrimitive = Sphere(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
-            break;
-        case PrimitiveType::PRIMITIVE_CYLINDER:
-            currPrimitive = Cylinder(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
-            break;
-        case PrimitiveType::PRIMITIVE_CONE:
-            currPrimitive = Cone(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
-            break;
-        default:
-            break;
-        }
-
         //get the potential nearest intersect for this shape
-        smallestIntsForObjects[i] = currPrimitive.getIntersectData(rayOriginInObj, rayDirInObj);
+        smallestIntsForObjects[i] = findIntersectDataForShape(shape, origin, direction);
     }
 
     return smallestIntsForObjects;
@@ -90,6 +93,7 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
     glm::vec4 cameraInWorld = glm::inverse(useCamera.getViewMatrix()) * glm::vec4(0,0,0,1);
 
     for(int ri = 0; ri < scene.height(); ri++) {
+        std::cout << ri << std::endl;
         for(int ci = 0; ci < scene.width(); ci++) {
             //get the ray for the pixel (todo: allow for upsampling)
             float rayXCam = vpWidth * (((ci + 0.5) / scene.width()) - 0.5);
@@ -102,7 +106,9 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
             //get the direction of the ray in world space
             glm::vec4 rayDirInWorld = glm::normalize((glm::inverse(useCamera.getViewMatrix()) * vpPointInCam) - cameraInWorld);
 
-            imageData[ri * scene.width() + ci] = toRGBA(recurRayTrace(cameraInWorld, rayDirInWorld, scene, scene.getShapes(), scene.getShapes().size(), 0));
+            // imageData[ri * scene.width() + ci] = toRGBA(recurRayTrace(cameraInWorld, rayDirInWorld, scene, scene.getShapes(), scene.getShapes().size(), 0));
+
+            imageData[ri * scene.width() + ci] = toRGBA(recurRayMarch(cameraInWorld, rayDirInWorld, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0)));
         }
     }
 }
@@ -356,4 +362,144 @@ glm::vec4 RayTracer::recurRayTrace(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
         return glm::vec4(0.f,0.f,0.f,0.f);
     }
 }
+
+
+/**
+ * @brief findIntersectDataForShapes gets all nearest intersections for a ray through a list of shapes
+ * @param shapes a list of shapes to be intersected
+ * @param origin the origin point of the ray in world space
+ * @param direction the (normal) direction of the ray in world space
+ * @return a list of all intersects with the ray that are closest to the origin
+ */
+std::vector<float> findDensityDataForShapes(std::vector<RenderShapeData> shapes, glm::vec4 point) {
+    std::vector<float> objectDensities(shapes.size());
+
+    for (int i = 0; i < shapes.size(); i++) {
+        RenderShapeData shape = shapes[i];
+
+        //get origin, ray direcion in object space
+        glm::mat4 objSpaceConv = glm::inverse(shape.ctm);
+        glm::vec4 pointInObj = objSpaceConv * point;
+
+        float bestTForObj;
+        ScenePrimitive currPrimitive;
+
+        //set shape to be some specific primitive
+        switch(shape.primitive.type) {
+        case PrimitiveType::PRIMITIVE_CUBE:
+            currPrimitive = Cube(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+            break;
+        case PrimitiveType::PRIMITIVE_SPHERE:
+            currPrimitive = Sphere(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+            break;
+        case PrimitiveType::PRIMITIVE_CYLINDER:
+            currPrimitive = Cylinder(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+            break;
+        case PrimitiveType::PRIMITIVE_CONE:
+            currPrimitive = Cone(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+            break;
+        default:
+            break;
+        }
+
+        //get the potential nearest intersect for this shape
+        objectDensities[i] = currPrimitive.getDensityData(pointInObj);
+    }
+
+    return objectDensities;
+}
+
+
+/**
+ * @brief RayTracer::recurRayMarch a recursive raymarcher, giving the value [0, 1] of some pixel at some point
+ * @param rayOrigin the origin of the ray to be marched
+ * @param rayDirection the (normalized) direction of the ray to be marched
+ * @param scene the total scene the ray exists in
+ * @param stepSize the length of the ray being marched along the direction
+ * @param numOfSteps the number of marched steps completed
+ * @param transparency the amount of transparency at some the marched point
+ * @param pixelResult the running result of all sampled points
+ * @return a vector representing the illumination values seen by the ray at some origin
+ */
+
+float TRANSPARENCY_THRESH = 0.001;
+int STEP_THRESH = 300;
+glm::vec4 BACKGROUND_COLOR = glm::vec4(0,0,0,1);
+
+glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult) {
+    if(transparency < TRANSPARENCY_THRESH) {
+        return glm::vec4(glm::vec3(pixelResult), 1);
+    } else if (numOfSteps > STEP_THRESH) {
+        if(pixelResult.r > 1 || pixelResult.g > 1 || pixelResult.b > 1) {
+            return glm::vec4(1,0,0,1);
+        }
+        return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + pixelResult), 1.f);
+    } else {
+        std::vector<float> objectDensities(scene.getShapes().size());
+
+        glm::vec4 rayEndpoint = rayOrigin + (stepSize * rayDirection);
+
+        //In reality this should be the middle of the ray step, not the end, but also who cares for now
+
+        glm::vec4 raySelectPoint = rayOrigin + (((float)rand() / ((float)RAND_MAX)) * stepSize * rayDirection);
+
+        objectDensities = findDensityDataForShapes(scene.getShapes(), raySelectPoint);
+
+        //select the highest density across all shapes
+        int highestDensityIdx = 0;
+        float highestDensity = 0.f;
+        for(int i = 0; i < objectDensities.size(); i++) {
+            if(objectDensities[i] > highestDensity) {
+                highestDensity = objectDensities[i];
+                highestDensityIdx = i;
+            }
+        }
+
+        //do lighting stuff for that object
+
+        float currentTransparency = transparency;
+
+        if(highestDensity > 0) {
+
+            //do lighting...
+
+            float attentuationAtPoint = exp(-stepSize * highestDensity);
+            currentTransparency *= attentuationAtPoint;
+
+            glm::vec4 accLightEffect = glm::vec4(0,0,0,1);
+
+            for(SceneLightData light : scene.getLights()) {
+                glm::vec4 pointToLight = light.dir;
+                float fAtt = 1.0;
+
+                if(light.type == LightType::LIGHT_POINT || light.type == LightType::LIGHT_SPOT) {
+                    pointToLight = glm::vec4(glm::normalize(glm::vec3(light.pos - raySelectPoint)), 0);
+                    float distToLight = glm::length(glm::vec3(light.pos - raySelectPoint));
+                    fAtt = fmin(1, 1/(light.function[0] + distToLight * light.function[1] + distToLight * distToLight * light.function[2]));
+                } else {
+                    pointToLight = glm::normalize(pointToLight);
+                    pointToLight *= -1;
+                }
+
+
+                IntersectionData intForObj = findIntersectDataForShape(scene.getShapes()[highestDensityIdx], raySelectPoint, pointToLight);
+                accLightEffect += (float)exp(-intForObj.intersectT * highestDensity * stepSize) * light.color * scene.getGlobalData().kd * stepSize;
+            }
+
+            //this is REALLY basic for now...
+            //
+            // pixelResult += currentTransparency * accLightEffect * scene.getShapes().at(highestDensityIdx).primitive.material.cDiffuse * stepSize;
+            pixelResult += accLightEffect * transparency * scene.getShapes().at(highestDensityIdx).primitive.material.cDiffuse;
+            // pixelResult += scene.getGlobalData().ka * scene.getShapes().at(highestDensityIdx).primitive.material.cAmbient * stepSize;
+        }
+
+
+
+        return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult);
+    }
+}
+
+//TODO:
+//- better lighting effects
+//- speed-ups (skip pixels with no intersects)
 
