@@ -44,7 +44,14 @@ auto getGradient(auto&& function, glm::vec4 position, int dimension){
 // There isn't a really good way of explaining this in the papers, as it is assumed as common
 // knowledge for the type of person for this type of paper. This is the one part that has tripped
 // me up every single time.
-std::vector<glm::mat4> BlackHole::calculateChristoffel(glm::vec4 position, glm::mat4 metric){
+
+/**
+ * @brief BlackHole::calculateChristoffel Calculates the christoffel symbol of the second kind for a specific position and metric
+ * @param position
+ * @param metric
+ * @return
+ */
+std::vector<glm::mat4> BlackHole::calculateChristoffel(glm::vec4 position, auto&& metric){
     // get the metric
     glm::mat4 metInv = glm::inverse(metric);
 
@@ -54,14 +61,72 @@ std::vector<glm::mat4> BlackHole::calculateChristoffel(glm::vec4 position, glm::
     std::vector<glm::mat4> metricDifference;
     metricDifference.assign(4,glm::mat4(0));
 
-    // Calculate the metric difference
-
-    // calculate the christoffel symbols per element
-
     // Equation is:
     // Gamma^mu_alpha,beta = 1/2 * sum sigma from 0->3 (g^mu,sigma * ())
 
-    // return
+    // Calculate the metric difference - Difference in overall force, therefore curvature of spacetime
+
+    // for(int i = 0; i < 4; ++i){
+    //     glm::mat4 gradient = getGradient(metric, position, i);
+    //     // for(int j = 0; j < 4; ++j){
+    //     //     for(int k = 0; k < 4; ++k){
+    //     //         metricDifference[i][j][k] = gradient[j][k];
+    //     //     }
+    //     // }
+    //     metricDifference[i] = gradient;
+    // }
+
+    // calculate the christoffel symbols per element
+    // THIS: https://physics.stackexchange.com/questions/733433/christoffel-symbols-for-schwarzschild-metric
+
+    // Due to math reasons about t not interacting with this, the only symbols I need to worry about are the following 9:
+    // gamma_x_y_z = gamma_x_z_y
+    float r = position[1];
+    float theta = position[2];
+    float phi = position[3];
+    float gamma_r_t_t = (M*(r - 2*M))/(pow(r,3));
+    float gamma_r_r_r = -(M)/(r*(r-2*M));
+    float gamma_r_theta_theta = -(r - 2*M);
+    float gamma_r_phi_phi = -(r - 2*M)*(sin(theta)*sin(theta));
+    float gamma_t_r_t = M/(r*(r - 2*M));
+    float gamma_theta_r_theta = 1/r;
+    float gamma_theta_phi_phi = -sin(theta)*cos(theta);
+    float gamma_phi_r_phi = 1/r;
+    float gamma_phi_theta_phi = cos(theta)/sin(theta);
+
+    // Gamma^t_XX
+    gamma[0] = glm::mat4{
+        0, gamma_t_r_t,0,0,
+        gamma_t_r_t,0,0,0,
+        0,0,0,0,
+        0,0,0,0
+    };
+
+    // Gamma^r_XX
+    gamma[1] = glm::mat4{
+        gamma_r_t_t,0,0,0,
+        0,gamma_r_r_r,0,0,
+        0,0,gamma_r_theta_theta,0,
+        0,0,0,gamma_r_phi_phi
+    };
+
+    // Gamma^theta_XX
+    gamma[2] = glm::mat4{
+        0,0,0,0,
+        0,0,gamma_theta_r_theta,0,
+        0,gamma_theta_r_theta,0,0,
+        0,0,0,gamma_theta_phi_phi
+    };
+
+    // Gamma^phi_XX
+    gamma[3] = glm::mat4{
+        0,0,0,0,
+        0,0,0,gamma_phi_r_phi,
+        0,0,0,gamma_phi_theta_phi,
+        0,gamma_phi_r_phi,gamma_phi_theta_phi,0
+    };
+
+    return gamma;
 }
 
 /**

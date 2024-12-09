@@ -16,7 +16,7 @@ public:
     glm::mat4 getTetradBasis(float r, float theta, float phi, float t);
 
     // Bit of a hack here but if we can approximate a 4x4x4 tensor with an array of 4x4 mats...
-    std::vector<glm::mat4> calculateChristoffel(glm::vec4 position, glm::mat4 metric);
+    std::vector<glm::mat4> calculateChristoffel(glm::vec4 position, auto&& metric);
 
     glm::mat4 getSchwarzchildMetric(float r, float theta, float phi, float t);
 

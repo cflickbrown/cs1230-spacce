@@ -494,15 +494,15 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
         }
 
         // Run black hole geodesic integration here
-        float t,r,theta,phi;
-        this->m_blackHole.getSchwarzchildMetric(t,r,theta,phi);
-        glm::mat4 tetradBasis = m_blackHole.getTetradBasis(t,r,theta,phi);
+        // float t,r,theta,phi;
+        // this->m_blackHole.getSchwarzchildMetric(t,r,theta,phi);
+        // glm::mat4 tetradBasis = m_blackHole.getTetradBasis(t,r,theta,phi);
 
-        // convert ray such that z points to the black hole
+        // // convert ray such that z points to the black hole
 
-        glm::vec4 position = rayEndpoint;
-        glm::vec4 direction = {-1,-rayDirection[2], rayDirection[1], rayDirection[0]};
-        direction = tetradBasis * direction;
+        // glm::vec4 position = rayEndpoint;
+        // glm::vec4 direction = {-1,-rayDirection[2], rayDirection[1], rayDirection[0]};
+        // direction = tetradBasis * direction;
 
         // Calculate new ray direction, normalize velocity to the speed of light
 
@@ -510,18 +510,19 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
 
         // For now we're going ot go with literally the simplest way of rendering it possible.
         // We're literally going to just... pull the ray towards the singularity.
-
-        float G = 0.1;
-        glm::vec4 singDir = glm::normalize(rayEndpoint - m_blackHole.position);
-        float singDistance = glm::length(rayEndpoint - m_blackHole.position);
+        float G = 0.001f;
+        glm::vec4 singDir = glm::normalize(glm::vec4{0,0,0,1} - rayEndpoint);
+        float singDistance = glm::length(glm::vec4{0,0,0,1} - rayEndpoint);
         glm::vec4 pull = G/(singDistance*singDistance) * singDir;
 
-        if(singDistance < 1){
+        //std::cout << pull[0] << " " << pull[1] << " " << pull[2] << " " << pull[3] << std::endl;
+
+        if(singDistance < 0.5f){
             return {0,0,0,1};
         }
 
 
-        return recurRayMarch(rayEndpoint, rayDirection + pull, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult);
+        return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult);
     }
 }
 
