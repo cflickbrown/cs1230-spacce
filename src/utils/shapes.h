@@ -8,9 +8,12 @@
 #include <glm/glm.hpp>
 
 #include "scenedata.h"
+#include "perlinnoise.h"
 
 //absurdly large alpha to simulate solid-ness
 float SOLID_ALPHA = 101;
+
+PerlinNoise P_NOISE = PerlinNoise();
 
 ScenePrimitive DensityCube(PrimitiveType type,
                          SceneMaterial material,
@@ -294,7 +297,7 @@ ScenePrimitive Sphere(PrimitiveType type,
                     uCoord = 0.5;
                 }
 
-                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord));
+                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord), false);
             } else if (discrim == 0.0) {
                 float useRoot = (-1.0 * valB + sqrt(discrim)) / (2.0 * valA);
 
@@ -311,7 +314,7 @@ ScenePrimitive Sphere(PrimitiveType type,
                     uCoord = 0.5;
                 }
 
-                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord));
+                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord), false);
             } else {
                 return IntersectionData(false, FLT_MAX, glm::vec4(0));
             }
@@ -323,7 +326,7 @@ ScenePrimitive Sphere(PrimitiveType type,
                 return 0.f;
             }
 
-            return SOLID_ALPHA;
+            return P_NOISE.computePerlin3d(p.x, p.y, p.z);
         }
     };
 }
@@ -408,7 +411,7 @@ ScenePrimitive Cylinder(PrimitiveType type,
             //get the nearest intersect
             for(IntersectionData intersect : intersects) {
                 if(intersect.hasIntersect && intersect.intersectT < smallestIntersect.intersectT) {
-                    IntersectionData newInter = IntersectionData(intersect.hasIntersect, intersect.intersectT, intersect.normAtIntForObj, intersect.uvCoords, false);
+                    IntersectionData newInter = IntersectionData(intersect.hasIntersect, intersect.intersectT, intersect.normAtIntForObj, intersect.uvCoords, true);
                     smallestIntersect = newInter;
                 }
             }
@@ -422,7 +425,8 @@ ScenePrimitive Cylinder(PrimitiveType type,
                 return 0.f;
             }
 
-            return 1.f;
+            // return (float)rand()/((float)RAND_MAX / 1.f);
+            return SOLID_ALPHA;
         }
     };
 }
