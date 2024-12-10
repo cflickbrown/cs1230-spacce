@@ -52,7 +52,7 @@ public:
                            const RayTraceScene &scene,
                            int recLevel);
 
-    glm::vec4 recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult, float time);
+    glm::vec4 recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult, float time, glm::vec4 geodesicPosition, glm::vec4 geodesicDirection);
 
 
 private:

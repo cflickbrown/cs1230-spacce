@@ -108,7 +108,7 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
 
             // imageData[ri * scene.width() + ci] = toRGBA(recurRayTrace(cameraInWorld, rayDirInWorld, scene, scene.getShapes(), scene.getShapes().size(), 0));
 
-            imageData[ri * scene.width() + ci] = toRGBA(recurRayMarch(cameraInWorld, rayDirInWorld, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0),0));
+            imageData[ri * scene.width() + ci] = toRGBA(recurRayMarch(cameraInWorld, rayDirInWorld, scene, 0.02, 0, 1.f, glm::vec4(0,0,0,0),0));
         }
     }
 }
@@ -409,6 +409,13 @@ std::vector<float> findDensityDataForShapes(std::vector<RenderShapeData> shapes,
     return objectDensities;
 }
 
+enum LightHitType{EVENT_HORIZON, ESCAPED};
+
+struct relativisticOutcome{
+    LightHitType outcome;
+    glm::vec4 direction;
+};
+
 
 /**
  * @brief RayTracer::recurRayMarch a recursive raymarcher, giving the value [0, 1] of some pixel at some point
@@ -423,10 +430,10 @@ std::vector<float> findDensityDataForShapes(std::vector<RenderShapeData> shapes,
  */
 
 float TRANSPARENCY_THRESH = 0.001;
-int STEP_THRESH = 300;
-glm::vec4 BACKGROUND_COLOR = glm::vec4(0,0,0,1);
+int STEP_THRESH = 1000;
+glm::vec4 BACKGROUND_COLOR = glm::vec4(0.5,0.5,0.5,1);
 
-glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult, float time) {
+glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult, float time, glm::vec4 geodesicPosition, glm::vec4 geodesicDirection) {
     if(transparency < TRANSPARENCY_THRESH) {
         return glm::vec4(glm::vec3(pixelResult), 1);
     } else if (numOfSteps > STEP_THRESH || glm::length(rayOrigin) > 30) {
@@ -434,10 +441,10 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
             return glm::vec4(1,0,0,1);
         }
         if(glm::length(rayOrigin) > 30){
-            std::cout << "HOMEEEE RRUUUUUUNNNN" << std::endl;
+            std::cout << "Ray Escaped" << std::endl;
         }
         //return glm::vec4(1,0,0,1); // TEMP: See if rays are getting anywhere
-        return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + pixelResult), 1.f);
+        return glm::vec4(glm::vec3((/*BACKGROUND_COLOR*/ glm::normalize(rayDirection) * transparency) + pixelResult), 1.f);
     } else {
         std::vector<float> objectDensities(scene.getShapes().size());
 
@@ -501,13 +508,18 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
 
         m_blackHole = BlackHole();
         m_blackHole.J = 0;
-        m_blackHole.M = 1.f;
+        m_blackHole.M = 0.1f;
         m_blackHole.Q = 0;
         m_blackHole.position = glm::vec4(0,0,0,1);
         m_blackHole.rs = m_blackHole.M*2;
 
+        // if(numOfSteps == 100){
+        //     std::cout << "ooga booga" << std::endl;
+        // }
+
         // Convert to spherical coordinates
         glm::vec4 posRelative = rayEndpoint - m_blackHole.position;
+        //std::cout << "posRelative at: " << numOfSteps << " : " << posRelative[0] << " " << posRelative[1] << " " << posRelative[2] << " " << posRelative[3] << std::endl;
         float t = time,r = glm::length(posRelative),theta = atan(posRelative.y/posRelative.x),phi = acos(posRelative.z/r);
 
         glm::mat4 schwarzchildMetric = this->m_blackHole.getSchwarzchildMetric(t,r,theta,phi);
@@ -523,7 +535,24 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
         // // convert ray such that z points to the black hole
 
         glm::vec4 position = {t,r,theta,phi};
-        glm::vec4 direction = {-1,-rayDirection[2], rayDirection[1], rayDirection[0]};
+        // Weird NaN stuff sometimes happens here
+        float deltaPhi = acos((posRelative.z+rayDirection.z)/r);
+        if((posRelative.z+rayDirection.z)/r == 0){
+            deltaPhi = 0;
+        }
+
+        glm::vec4 positionDelta = {0,glm::length(posRelative+rayDirection),atan((posRelative.y+rayDirection.y)/(posRelative.x+rayDirection.x)), deltaPhi};
+        glm::vec4 direction = positionDelta-position;
+        //direction = glm::normalize(direction);
+        direction[0] = -1;
+        //glm::vec4 direction = {-1,-rayDirection[2], rayDirection[1], rayDirection[0]};
+
+        //std::cout << "BEGINNING: " << direction[0] << " " << direction[1] << " " << direction[2] << " " << direction[3] << std::endl;
+        //std::cout << "position: " << position[0] << " " << position[1] << " " << position[2] << " " << position[3] << std::endl;
+        //std::cout << "positionDelta: " << positionDelta[0] << " " << positionDelta[1] << " " << positionDelta[2] << " " << positionDelta[3] << std::endl;
+        //std::cout << "posRelative: " << posRelative[0] << " " << posRelative[1] << " " << posRelative[2] << " " << posRelative[3] << std::endl;
+        //std::cout << "rayDirection: " << rayDirection[0] << " " << rayDirection[1] << " " << rayDirection[2] << " " << rayDirection[3] << std::endl;
+
         //std::cout << direction[0] << " " << direction[1] << " " << direction[2] << " " << direction[3] << std::endl;
         direction = tetradBasis * direction;
 
@@ -545,13 +574,16 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
             }
             acceleration[mu] = sum;
         }
+
+        //std::cout << "MIDDLE: " << direction[0] << " " << direction[1] << " " << direction[2] << " " << direction[3] << std::endl;
+
         //acceleration = glm::normalize(acceleration);
         direction+=acceleration * stepSize;
         position+=direction*stepSize;
 
         position[0] = time;
 
-        if(abs(position[1]) < m_blackHole.rs){
+        if(position[1] < m_blackHole.rs && position[1] > 0){
             std::cout << position[1] << " " << m_blackHole.rs << std::endl;
             return {0,0,0,1};
         }
@@ -565,16 +597,20 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
                                         position[1] * cos(position[3]), 1};
 
         glm::vec4 directionCartesian = {direction[1] * sin(direction[3]) * cos(direction[2]),
-                                       direction[1] * sin(direction[3]) * sin(direction[2]),
-                                       direction[1] * cos(direction[3]), 0};
+                                      direction[1] * sin(direction[3]) * sin(direction[2]),
+                                      direction[1] * cos(direction[3]), 0};
+
+        //glm::vec4 directionCartesian = positionCartesian - rayOrigin;
+        directionCartesian = glm::normalize(directionCartesian);
 
         //directionCartesian = glm::normalize(directionCartesian)*stepSize;
 
         //std::cout << glm::length(directionCartesian) << std::endl;
         //std::cout << position[0] << " " << position[1] << " " << position[2] << " " << position[3] << std::endl;
-        //std::cout << directionCartesian[0] << " " << directionCartesian[1] << " " << directionCartesian[2] << " " << directionCartesian[3] << std::endl;
+        //std::cout << "END: " << direction[0] << " " << direction[1] << " " << direction[2] << " " << direction[3] << std::endl;
+        //std::cout << "END (CART): " << directionCartesian[0] << " " << directionCartesian[1] << " " << directionCartesian[2] << " " << directionCartesian[3] << std::endl;
 
-        return recurRayMarch(positionCartesian, directionCartesian, scene, glm::length(directionCartesian), numOfSteps + 1, currentTransparency, pixelResult, time+0.05);
+        return recurRayMarch(positionCartesian, directionCartesian, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult, time+0.05);
     }
 }
 
