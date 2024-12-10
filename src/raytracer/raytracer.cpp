@@ -108,7 +108,7 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
 
             // imageData[ri * scene.width() + ci] = toRGBA(recurRayTrace(cameraInWorld, rayDirInWorld, scene, scene.getShapes(), scene.getShapes().size(), 0));
 
-            imageData[ri * scene.width() + ci] = toRGBA(recurRayMarch(cameraInWorld, rayDirInWorld, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0)));
+            imageData[ri * scene.width() + ci] = toRGBA(recurRayMarch(cameraInWorld, rayDirInWorld, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0),0));
         }
     }
 }
@@ -426,13 +426,17 @@ float TRANSPARENCY_THRESH = 0.001;
 int STEP_THRESH = 300;
 glm::vec4 BACKGROUND_COLOR = glm::vec4(0,0,0,1);
 
-glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult) {
+glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult, float time) {
     if(transparency < TRANSPARENCY_THRESH) {
         return glm::vec4(glm::vec3(pixelResult), 1);
-    } else if (numOfSteps > STEP_THRESH) {
+    } else if (numOfSteps > STEP_THRESH || glm::length(rayOrigin) > 30) {
         if(pixelResult.r > 1 || pixelResult.g > 1 || pixelResult.b > 1) {
             return glm::vec4(1,0,0,1);
         }
+        if(glm::length(rayOrigin) > 30){
+            std::cout << "HOMEEEE RRUUUUUUNNNN" << std::endl;
+        }
+        //return glm::vec4(1,0,0,1); // TEMP: See if rays are getting anywhere
         return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + pixelResult), 1.f);
     } else {
         std::vector<float> objectDensities(scene.getShapes().size());
@@ -494,35 +498,83 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
         }
 
         // Run black hole geodesic integration here
-        // float t,r,theta,phi;
-        // this->m_blackHole.getSchwarzchildMetric(t,r,theta,phi);
-        // glm::mat4 tetradBasis = m_blackHole.getTetradBasis(t,r,theta,phi);
+
+        m_blackHole = BlackHole();
+        m_blackHole.J = 0;
+        m_blackHole.M = 1.f;
+        m_blackHole.Q = 0;
+        m_blackHole.position = glm::vec4(0,0,0,1);
+        m_blackHole.rs = m_blackHole.M*2;
+
+        // Convert to spherical coordinates
+        glm::vec4 posRelative = rayEndpoint - m_blackHole.position;
+        float t = time,r = glm::length(posRelative),theta = atan(posRelative.y/posRelative.x),phi = acos(posRelative.z/r);
+
+        glm::mat4 schwarzchildMetric = this->m_blackHole.getSchwarzchildMetric(t,r,theta,phi);
+        glm::mat4 tetradBasis = m_blackHole.getTetradBasis(t,r,theta,phi);
+
+        // for(int i = 0; i < 4; ++i){
+        //     for(int j = 0; j < 4; ++j){
+        //         std::cout << tetradBasis[i][j] << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
 
         // // convert ray such that z points to the black hole
 
-        // glm::vec4 position = rayEndpoint;
-        // glm::vec4 direction = {-1,-rayDirection[2], rayDirection[1], rayDirection[0]};
-        // direction = tetradBasis * direction;
+        glm::vec4 position = {t,r,theta,phi};
+        glm::vec4 direction = {-1,-rayDirection[2], rayDirection[1], rayDirection[0]};
+        //std::cout << direction[0] << " " << direction[1] << " " << direction[2] << " " << direction[3] << std::endl;
+        direction = tetradBasis * direction;
+
+
 
         // Calculate new ray direction, normalize velocity to the speed of light
 
-        // aaaahh
+        std::vector<glm::mat4> christoff2 = m_blackHole.calculateSchwarzchildChristoffel(position);
 
-        // For now we're going ot go with literally the simplest way of rendering it possible.
-        // We're literally going to just... pull the ray towards the singularity.
-        float G = 0.001f;
-        glm::vec4 singDir = glm::normalize(glm::vec4{0,0,0,1} - rayEndpoint);
-        float singDistance = glm::length(glm::vec4{0,0,0,1} - rayEndpoint);
-        glm::vec4 pull = G/(singDistance*singDistance) * singDir;
+        // Now that we have all neccesary parts of the geodesic equation, we can finally integrate along the geodesic... for one single step of one single ray.
+        // This is a "bit" expensive
+        glm::vec4 acceleration = glm::vec4(0);
+        for(int mu = 0; mu < 4; ++mu){
+            float sum =0.f;
+            for(int al = 0; al < 4; ++al){
+                for(int be = 0; be < 4; ++be){
+                    sum += -christoff2[mu][al][be] * direction[al] * direction[be];
+                }
+            }
+            acceleration[mu] = sum;
+        }
+        //acceleration = glm::normalize(acceleration);
+        direction+=acceleration * stepSize;
+        position+=direction*stepSize;
 
-        //std::cout << pull[0] << " " << pull[1] << " " << pull[2] << " " << pull[3] << std::endl;
+        position[0] = time;
 
-        if(singDistance < 0.5f){
+        if(abs(position[1]) < m_blackHole.rs){
+            std::cout << position[1] << " " << m_blackHole.rs << std::endl;
             return {0,0,0,1};
         }
 
+        // If not, convert back to cartesian coordinates and step the ray.
 
-        return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult);
+        //std::cout << sin(position[2]) << " " << cos(position[2]) << " " << sin(position[3]) << " " << cos(position[3]) << std::endl;
+        //std::cout << position[1] << std::endl;
+        glm::vec4 positionCartesian = {position[1] * sin(position[3]) * cos(position[2]),
+                                         position[1] * sin(position[3]) * sin(position[2]),
+                                        position[1] * cos(position[3]), 1};
+
+        glm::vec4 directionCartesian = {direction[1] * sin(direction[3]) * cos(direction[2]),
+                                       direction[1] * sin(direction[3]) * sin(direction[2]),
+                                       direction[1] * cos(direction[3]), 0};
+
+        //directionCartesian = glm::normalize(directionCartesian)*stepSize;
+
+        //std::cout << glm::length(directionCartesian) << std::endl;
+        //std::cout << position[0] << " " << position[1] << " " << position[2] << " " << position[3] << std::endl;
+        //std::cout << directionCartesian[0] << " " << directionCartesian[1] << " " << directionCartesian[2] << " " << directionCartesian[3] << std::endl;
+
+        return recurRayMarch(positionCartesian, directionCartesian, scene, glm::length(directionCartesian), numOfSteps + 1, currentTransparency, pixelResult, time+0.05);
     }
 }
 

@@ -13,14 +13,16 @@ public:
 
     static float getSchwarzchildRadius();
 
-    glm::mat4 getTetradBasis(float r, float theta, float phi, float t);
+    glm::mat4 getTetradBasis(float t, float r, float theta, float phi);
 
     // Bit of a hack here but if we can approximate a 4x4x4 tensor with an array of 4x4 mats...
-    std::vector<glm::mat4> calculateChristoffel(glm::vec4 position, auto&& metric);
+    std::vector<glm::mat4> calculateSchwarzchildChristoffel(glm::vec4 position);
 
-    glm::mat4 getSchwarzchildMetric(float r, float theta, float phi, float t);
+    std::vector<glm::mat4> calculateKerrChristoffel(glm::vec4 position);
 
-    glm::mat4 getKerrMetric(float r, float theta, float phi, float t);
+    glm::mat4 getSchwarzchildMetric(float t, float r, float theta, float phi);
+
+    glm::mat4 getKerrMetric(float t, float r, float theta, float phi);
 
     void renderBlackHole(float t, float r, float theta, float phi);
 
