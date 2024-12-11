@@ -45,6 +45,8 @@ add_executable(${PROJECT_NAME}
   src/utils/imagereader.h src/utils/imagereader.cpp
   src/utils/shapes.h
   src/utils/perlinnoise.h src/utils/perlinnoise.cpp
+  src/utils/stargenerator.h
+  src/utils/stargenerator.cpp
 
 )
 
