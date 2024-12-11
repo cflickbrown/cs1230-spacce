@@ -90,16 +90,20 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
 
     for (int i = 0; i < positions.size(); i++) {
         glm::mat4 ctm = glm::mat4(1.0f);
+
+        ctm = rotate(ctm, glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        ctm = rotate(ctm, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
         ctm = translate(ctm, positions[i]);
 
         float starSize = generateSize(generator, size);
         glm::mat4 starCTM = scale(ctm, glm::vec3(starSize));
-        glm::mat4 glowCTM = scale(ctm, glm::vec3(starSize * 1.5));
+        glm::mat4 glowCTM = scale(ctm, glm::vec3(starSize * 1.3));
 
         ScenePrimitive* star = new ScenePrimitive();
         SceneMaterial &starMat = star->material;
         starMat.clear();
-        star->type = PrimitiveType::PRIMITIVE_SPHERE;
+        star->type = PrimitiveType::PRIMITIVE_CUBE;
 
         ScenePrimitive* starGlow = new ScenePrimitive();
         SceneMaterial &glowMat = starGlow->material;
@@ -128,8 +132,11 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
         glowMat.solid = false;
         glowMat.density = 0.1;
 
-        // renderData.shapes.push_back(RenderShapeData(*star, starCTM));
+        renderData.shapes.push_back(RenderShapeData(*star, starCTM));
         renderData.shapes.push_back(RenderShapeData(*starGlow, glowCTM));
+
+        delete star;
+        delete starGlow;
     }
 }
 
