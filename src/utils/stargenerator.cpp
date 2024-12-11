@@ -64,7 +64,9 @@ glm::vec3 generateColor(std::mt19937& generator, std::uniform_int_distribution<>
     case 2:
         return glm::vec3(0.6f, 0.3f, 0.8f); // purple
     case 3:
-        return glm::vec3(0.0f, 1.0f, 0.5f); // green
+        return glm::vec3(1.0f, 0.5f, 0.5f); // red
+    case 4:
+        return glm::vec3(1.0f, 0.3f, 0.8f); // purple-y red
     }
 }
 
@@ -79,9 +81,9 @@ glm::vec2 generateIntensity(std::mt19937& generator,
 }
 
 void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vector<glm::vec3>& positions) {
-    std::normal_distribution<float> size(0.05, 0.05);
+    std::normal_distribution<float> size(0.04, 0.03);
 
-    std::uniform_int_distribution<> colorChoice(0, 3);
+    std::uniform_int_distribution<> colorChoice(0, 4);
 
     std::normal_distribution<float> intensity(0.7, 0.5);
     std::normal_distribution<float> shine(50, 10);
@@ -92,7 +94,7 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
 
         float starSize = generateSize(generator, size);
         glm::mat4 starCTM = scale(ctm, glm::vec3(starSize));
-        glm::mat4 glowCTM = scale(ctm, glm::vec3(starSize * 1.3));
+        glm::mat4 glowCTM = scale(ctm, glm::vec3(starSize * 1.5));
 
         ScenePrimitive* star = new ScenePrimitive();
         SceneMaterial &starMat = star->material;
@@ -102,7 +104,7 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
         ScenePrimitive* starGlow = new ScenePrimitive();
         SceneMaterial &glowMat = starGlow->material;
         glowMat.clear();
-        starGlow->type = PrimitiveType::PRIMITIVE_SPHERE;
+        starGlow->type = PrimitiveType::PRIMITIVE_CUBE;
 
         glm::vec3 color = generateColor(generator, colorChoice);
         glm::vec2 intensities = generateIntensity(generator, intensity, shine);
@@ -126,7 +128,7 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
         glowMat.solid = false;
         glowMat.density = 0.1;
 
-        renderData.shapes.push_back(RenderShapeData(*star, starCTM));
+        // renderData.shapes.push_back(RenderShapeData(*star, starCTM));
         renderData.shapes.push_back(RenderShapeData(*starGlow, glowCTM));
     }
 }
