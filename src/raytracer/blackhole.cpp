@@ -25,10 +25,10 @@ glm::mat4 BlackHole::getSchwarzchildMetric(float t, float r, float theta, float 
 
 glm::mat4 BlackHole::getTetradBasis(float t, float r, float theta, float phi){
     glm::mat4 tetradSet = {
-        1/(1 - sqrt(rs/r)), 0, 0, 0,
+        1/(sqrt(1 - rs/r)), 0, 0, 0,
         0, sqrt(1 - (rs/r)), 0, 0,
         0, 0, rs/r, 0,
-        0, 0, 0, 1/(r*sin(theta))
+        0, 0, 0, 1/(r*sin(theta+0.000001f))
     };
     return tetradSet;
 }
@@ -177,7 +177,7 @@ std::vector<glm::mat4> BlackHole::calculateKerrChristoffel(glm::vec4 position){
     float gamma_theta_r_theta = 1/r;
     float gamma_theta_phi_phi = -sin(theta)*cos(theta);
     float gamma_phi_r_phi = 1/r;
-    float gamma_phi_theta_phi = cos(theta)/sin(theta);
+    float gamma_phi_theta_phi = cos(theta)/sin(theta+0.00001f);
 
     // Gamma^t_XX
     gamma[0] = glm::mat4{
