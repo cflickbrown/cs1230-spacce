@@ -83,7 +83,7 @@ float PerlinNoise::computePerlin3d(float x, float y, float z) {
     return abs(interpolate(
             interpolate(interpolate(G, H, x - xInt), interpolate(E, F, x - xInt), y - yInt),
             interpolate(interpolate(C, D, x - xInt), interpolate(A, B, x - xInt), y - yInt),
-               z - zInt))/sqrt(3);
+               z - zInt))/1.2;
     //change: C, D flipped, 0.5 -> dx or dy
 
     // Return 0 as a placeholder
