@@ -232,7 +232,7 @@ ScenePrimitive Cube(PrimitiveType type,
                 if (p.x + intersect.intersectT * d.x <= compPoint && p.x + intersect.intersectT * d.x >= -compPoint &&
                     p.y + intersect.intersectT * d.y <= compPoint && p.y + intersect.intersectT * d.y >= -compPoint &&
                     p.z + intersect.intersectT * d.z <= compPoint && p.z + intersect.intersectT * d.z >= -compPoint) {
-                    validIntersects.push_back(IntersectionData(true, intersect.intersectT, intersect.normAtIntForObj, intersect.uvCoords));
+                    validIntersects.push_back(IntersectionData(true, intersect.intersectT, intersect.normAtIntForObj, intersect.uvCoords, material.solid));
                 } else {
                     validIntersects.push_back(IntersectionData(false, FLT_MAX, glm::vec4(0)));
                 }
@@ -244,7 +244,6 @@ ScenePrimitive Cube(PrimitiveType type,
             for(IntersectionData validInt : validIntersects) {
                 if(smallestIntersect.intersectT > validInt.intersectT) {
                     smallestIntersect = validInt;
-
                 }
             }
 
@@ -257,7 +256,7 @@ ScenePrimitive Cube(PrimitiveType type,
                 return 0.f;
             }
 
-            return SOLID_ALPHA;
+            return material.density;
         }
     };
 }
@@ -297,7 +296,7 @@ ScenePrimitive Sphere(PrimitiveType type,
                     uCoord = 0.5;
                 }
 
-                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord), false);
+                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord));
             } else if (discrim == 0.0) {
                 float useRoot = (-1.0 * valB + sqrt(discrim)) / (2.0 * valA);
 
@@ -314,7 +313,7 @@ ScenePrimitive Sphere(PrimitiveType type,
                     uCoord = 0.5;
                 }
 
-                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord), false);
+                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord), material.solid);
             } else {
                 return IntersectionData(false, FLT_MAX, glm::vec4(0));
             }
@@ -326,7 +325,8 @@ ScenePrimitive Sphere(PrimitiveType type,
                 return 0.f;
             }
 
-            return P_NOISE.computePerlin3d(p.x, p.y, p.z);
+            // return P_NOISE.computePerlin3d(p.x, p.y, p.z);
+            return material.density;
         }
     };
 }
@@ -364,7 +364,7 @@ ScenePrimitive Cylinder(PrimitiveType type,
                     float thetaU = atan2(p.z + root1 * d.z, p.x + root1 * d.x);
                     float uCoord = thetaU < 0 ? -1*thetaU/(2*M_PI) : 1 - (thetaU/(2*M_PI));
 
-                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y)));
+                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y), material.solid));
                 }
 
                 if(p.y + root2 * d.y <= compPoint && p.y + root2 * d.y >= -compPoint) {
@@ -375,7 +375,7 @@ ScenePrimitive Cylinder(PrimitiveType type,
                     float thetaU = atan2(p.z + root2 * d.z, p.x + root2 * d.x);
                     float uCoord = thetaU < 0 ? -1*thetaU/(2*M_PI) : 1 - (thetaU/(2*M_PI));
 
-                    intersects.push_back(IntersectionData(true, root2, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root2 * d.y)));
+                    intersects.push_back(IntersectionData(true, root2, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root2 * d.y), material.solid));
                 }
             } else if (discrim == 0.0) {
                 float root1 = (-1.0 * valBSide + sqrt(discrim)) / (2.0 * valASide);
@@ -388,7 +388,7 @@ ScenePrimitive Cylinder(PrimitiveType type,
                     float thetaU = atan2(p.z + root1 * d.z, p.x + root1 * d.x);
                     float uCoord = thetaU < 0 ? -1*thetaU/(2*M_PI) : 1 - (thetaU/(2*M_PI));
 
-                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y)));
+                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y), material.solid));
                 }
             } else {
                 intersects.push_back(IntersectionData(false, FLT_MAX, glm::vec4(0)));
@@ -399,11 +399,11 @@ ScenePrimitive Cylinder(PrimitiveType type,
             float bottomCapT = (-0.5 - p.y) / d.y;
 
             if(pow(p.x + topCapT * d.x, 2) + pow(p.z + topCapT * d.z, 2) <= 0.25) {
-                intersects.push_back(IntersectionData(true, topCapT, glm::vec4(0, 1, 0, 0), glm::vec2((p.x + topCapT * d.x) + 0.5, -1.0 * ((p.z + topCapT * d.z) - 0.5))));
+                intersects.push_back(IntersectionData(true, topCapT, glm::vec4(0, 1, 0, 0), glm::vec2((p.x + topCapT * d.x) + 0.5, -1.0 * ((p.z + topCapT * d.z) - 0.5)), material.solid));
             }
 
             if(pow(p.x + bottomCapT * d.x, 2) + pow(p.z + bottomCapT * d.z, 2) <= 0.25) {
-                intersects.push_back(IntersectionData(true, bottomCapT, glm::vec4(0, -1, 0, 0), glm::vec2((p.x + bottomCapT * d.x) - 0.5, (p.z + bottomCapT * d.z) - 0.5)));
+                intersects.push_back(IntersectionData(true, bottomCapT, glm::vec4(0, -1, 0, 0), glm::vec2((p.x + bottomCapT * d.x) - 0.5, (p.z + bottomCapT * d.z) - 0.5), material.solid));
             }
 
             IntersectionData smallestIntersect = IntersectionData(false, FLT_MAX, glm::vec4(0));
@@ -411,8 +411,7 @@ ScenePrimitive Cylinder(PrimitiveType type,
             //get the nearest intersect
             for(IntersectionData intersect : intersects) {
                 if(intersect.hasIntersect && intersect.intersectT < smallestIntersect.intersectT) {
-                    IntersectionData newInter = IntersectionData(intersect.hasIntersect, intersect.intersectT, intersect.normAtIntForObj, intersect.uvCoords, true);
-                    smallestIntersect = newInter;
+                    smallestIntersect = intersect;
                 }
             }
 
@@ -426,7 +425,7 @@ ScenePrimitive Cylinder(PrimitiveType type,
             }
 
             // return (float)rand()/((float)RAND_MAX / 1.f);
-            return SOLID_ALPHA;
+            return material.density;
         }
     };
 }
@@ -464,7 +463,7 @@ ScenePrimitive Cone(PrimitiveType type,
                     float thetaU = atan2(p.z + root1 * d.z, p.x + root1 * d.x);
                     float uCoord = thetaU < 0 ? -1*thetaU/(2*M_PI) : 1 - (thetaU/(2*M_PI));
 
-                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y)));
+                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y), material.solid));
                 }
 
                 if((p.y + root2 * d.y <= compPoint) && (p.y + root2 * d.y) >= -compPoint) {
@@ -476,7 +475,7 @@ ScenePrimitive Cone(PrimitiveType type,
                     float thetaU = atan2(p.z + root2 * d.z, p.x + root2 * d.x);
                     float uCoord = thetaU < 0 ? -1*thetaU/(2*M_PI) : 1 - (thetaU/(2*M_PI));
 
-                    intersects.push_back(IntersectionData(true, root2, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root2 * d.y)));
+                    intersects.push_back(IntersectionData(true, root2, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root2 * d.y), material.solid));
                 }
             } else if (discrim == 0.0) {
                 float root1 = (-1.0 * valB + sqrt(discrim)) / (2.0 * valA);
@@ -490,7 +489,7 @@ ScenePrimitive Cone(PrimitiveType type,
                     float thetaU = atan2(p.z + root1 * d.z, p.x + root1 * d.x);
                     float uCoord = thetaU < 0 ? -1*thetaU/(2*M_PI) : 1 - (thetaU/(2*M_PI));
 
-                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y)));
+                    intersects.push_back(IntersectionData(true, root1, glm::normalize(normVec), glm::vec2(uCoord, 0.5 + p.y + root1 * d.y), material.solid));
                 }
             } else {
                 intersects.push_back(IntersectionData(false, FLT_MAX, glm::vec4(0)));
@@ -500,7 +499,7 @@ ScenePrimitive Cone(PrimitiveType type,
             float baseT = (-0.5 - p.y) / d.y;
 
             if(pow(p.x + baseT * d.x, 2) + pow(p.z + baseT * d.z, 2) <= 0.25) {
-                intersects.push_back(IntersectionData(true, baseT, glm::vec4(0, -1, 0, 0), glm::vec2((p.x + baseT * d.x) + 0.5, (p.z + baseT * d.z) + 0.5)));
+                intersects.push_back(IntersectionData(true, baseT, glm::vec4(0, -1, 0, 0), glm::vec2((p.x + baseT * d.x) + 0.5, (p.z + baseT * d.z) + 0.5), material.solid));
             }
 
             IntersectionData smallestIntersect = IntersectionData(false, FLT_MAX, glm::vec4(0));
@@ -521,7 +520,7 @@ ScenePrimitive Cone(PrimitiveType type,
                 return 0.f;
             }
 
-            return SOLID_ALPHA;
+            return material.density;
         }
     };
 }

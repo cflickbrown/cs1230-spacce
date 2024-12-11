@@ -313,10 +313,10 @@ glm::vec4 RayTracer::traceMarchOrBackground(glm::vec4 rayOrigin, glm::vec4 rayDi
 
     if(nearestIntShapeIdx < 0) {
         return BACKGROUND_COLOR;
-    } else if (nearestIntersect.solid) {
+    } else if (relevantShapes[nearestIntShapeIdx].primitive.material.solid) {
         return recurRayTrace(rayOrigin, rayDirection, scene, relevantShapes, droppedShapeIdx, recLevel);
     } else {
-        return recurRayMarch(rayOrigin, rayDirection, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0));
+        return recurRayMarch(rayOrigin, rayDirection, scene, 0.05, 0, 1.f, glm::vec4(0,0,0,0), 0);
     }
 
 }
@@ -457,14 +457,22 @@ std::vector<float> findDensityDataForShapes(std::vector<RenderShapeData> shapes,
  * @return a vector representing the illumination values seen by the ray at some origin
  */
 
-glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult) {
+glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, float stepSize, int numOfSteps, float transparency, glm::vec4 pixelResult, float accContactDist) {
     if(transparency < TRANSPARENCY_THRESH) {
-        return glm::vec4(glm::vec3(pixelResult), 1);
+        if(accContactDist > 0) {
+            return glm::vec4(glm::vec3(pixelResult / accContactDist), 1);
+        } else {
+            return glm::vec4(glm::vec3(pixelResult), 1);
+        }
     } else if (numOfSteps > STEP_THRESH) {
         if(pixelResult.r > 1 || pixelResult.g > 1 || pixelResult.b > 1) {
             return glm::vec4(1,0,0,1);
         }
-        return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + pixelResult), 1.f);
+        if(accContactDist > 0) {
+            return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + (pixelResult / accContactDist)), 1.f);
+        } else {
+            return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + (pixelResult)), 1.f);
+        }
     } else {
         std::vector<float> objectDensities(scene.getShapes().size());
 
@@ -531,8 +539,12 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
                                                                       0);
 
             //todo: blend!
+            if(accContactDist > 0) {
+                pixelResult = (1 - transparency) * (pixelResult / accContactDist);
+            }
             pixelResult += transparency * illuminatedPixel;
-            return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, 0, pixelResult);
+            // return pixelResult;
+            return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, 0, pixelResult, 0);
 
         } else if(highestDensity > 0) {
             //do lighting...
@@ -565,11 +577,12 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
             // pixelResult += currentTransparency * accLightEffect * scene.getShapes().at(highestDensityIdx).primitive.material.cDiffuse * stepSize;
             pixelResult += accLightEffect * transparency * scene.getShapes().at(highestDensityIdx).primitive.material.cDiffuse;
             // pixelResult += scene.getGlobalData().ka * scene.getShapes().at(highestDensityIdx).primitive.material.cAmbient * stepSize;
+            return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult, accContactDist + stepSize);
         }
 
 
 
-        return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult);
+        return recurRayMarch(rayEndpoint, rayDirection, scene, stepSize, numOfSteps + 1, currentTransparency, pixelResult, accContactDist);
     }
 }
 
