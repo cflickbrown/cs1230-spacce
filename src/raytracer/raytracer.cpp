@@ -77,7 +77,7 @@ struct relativisticOutcome{
 relativisticOutcome integrateGeodesic(glm::vec4 position, glm::vec4 direction, BlackHole& blackHole, float stepSize){
     relativisticOutcome ret = {UNFINISHED, std::vector<glm::vec4>(), std::vector<glm::vec4>()};
 
-    glm::vec4 posRelative = position - blackHole.position;
+    glm::vec4 posRelative = position;
     //float time = position[0],r = glm::length(posRelative),theta = atan(posRelative.y/posRelative.x),phi = acos(posRelative.z/r);
     glm::mat4 schwarzchildMetric; //= blackHole.getSchwarzchildMetric(time,r,theta,phi);
 
@@ -101,7 +101,7 @@ relativisticOutcome integrateGeodesic(glm::vec4 position, glm::vec4 direction, B
             float sum =0.f;
             for(int al = 0; al < 4; ++al){
                 for(int be = 0; be < 4; ++be){
-                    sum += christoff2[mu][al][be] * direction[al] * direction[be];
+                    sum += -christoff2[mu][al][be] * direction[al] * direction[be];
                 }
             }
             acceleration[mu] = sum;
@@ -189,14 +189,16 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
             glm::vec4 rayDirInWorld = glm::normalize((glm::inverse(useCamera.getViewMatrix()) * vpPointInCam) - cameraInWorld);
 
             // BEGIN BLACK HOLE HELL
+            glm::vec4 cameraRelativePosition = cameraInWorld - m_blackHole.position;
+
             float
                 t = 0.f,
-                r = glm::length(cameraInWorld),
-                theta = cameraInWorld.x == 0 && cameraInWorld.y == 0 ? 3.1415926535 : atan(cameraInWorld.y/cameraInWorld.x),
-                phi = cameraInWorld.z == 0 ? 3.1415926535 : acos(cameraInWorld.z/r);
+                r = glm::length(cameraRelativePosition),
+                phi = cameraRelativePosition.x == 0 && cameraRelativePosition.z == 0 ? 3.1415926535/2.f : atan(cameraRelativePosition.y/cameraRelativePosition.z),
+                theta = cameraRelativePosition.y == 0 ? 3.1415926535/2.f : acos(cameraRelativePosition.y/r);
             //std::cout << phi << std::endl;
-            theta = 3.1415926535f/4.f;
-            phi = -3.1415926535f/2.f;
+            //theta = 3.1415926535f/4.f;
+            //phi = -3.1415926535f/2.f;
             //glm::mat4 schwarzchildMetric = this->m_blackHole.getSchwarzchildMetric(t,r,theta,phi);
             glm::mat4 tetradBasis = m_blackHole.getTetradBasis(t,r,theta,phi);
             //std::cout << sin(theta) << ":" << theta << std::endl;
@@ -210,7 +212,7 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
             //direction[0] = -1;
             // Convert the flat space coordinate to out curved spacetime by multiplying it by multiplying it into a tetrad Basis
 
-            //glm::vec4 direction = {-1,-vpPointInCam[2], vpPointInCam[1], vpPointInCam[0]};
+            glm::vec4 direction = {-1,-vpPointInCam[2], vpPointInCam[0], vpPointInCam[1]};
 
             //std::cout << "direction: " << direction[0] << " " << direction[1] << " " << direction[2] << " " << direction[3] << std::endl;
             //std::cout << "position: " << position[0] << " " << position[1] << " " << position[2] << " " << position[3] << std::endl;
@@ -220,16 +222,16 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
 
             //std::cout << direction[0] << " " << direction[1] << " " << direction[2] << " " << direction[3] << std::endl;
 
-            //direction = tetradBasis * direction;
+            direction = tetradBasis * direction;
 
             //std::cout << tetradBasis[3][3] << std::endl;
 
-            glm::vec4 direction = {
-                tetradBasis[0][0] * -1,
-                tetradBasis[1][1] * -rayDirInWorld[2],
-                tetradBasis[2][2] * rayDirInWorld[0],
-                tetradBasis[3][3] * rayDirInWorld[1]
-        };
+        //     glm::vec4 direction = {
+        //         tetradBasis[0][0] * -1,
+        //         tetradBasis[1][1] * -rayDirInWorld[2],
+        //         tetradBasis[2][2] * rayDirInWorld[0],
+        //         tetradBasis[3][3] * rayDirInWorld[1]
+        // };
 
 
             relativisticOutcome geodesicPath = integrateGeodesic(position, direction, m_blackHole, 0.005f);
@@ -239,23 +241,25 @@ void RayTracer::render(RGBA *imageData, const RayTraceScene &scene) {
 
             switch(geodesicPath.outcome){
             case EVENT_HORIZON:
-                //std::cout << "HORIZON" << "\n";
+                std::cout << "HORIZON" << "\n";
                 imageData[ri * scene.width() + ci] = RGBA(255,255,255);
                 break;
             case ESCAPED:
-                //std::cout << geodesicEndDir[0] << "\n";
+                std::cout << "ESCAPED" << "\n";
                 imageData[ri * scene.width() + ci] = toRGBA(glm::normalize(glm::vec4(geodesicEndDir[2], geodesicEndDir[3],0,0)));
                 break;
             case UNFINISHED:
-                //std::cout << "UNFINISHED" << "\n";
+                std::cout << "UNFINISHED" << "\n";
                 imageData[ri * scene.width() + ci] = RGBA(255,0,0);
 
                 break;
             }
 
+            glm::vec4 diff = geodesicEndDir - direction;
 
+            std::cout << diff.x << " " << diff.y << " " << diff.z << " " << diff.w << std::endl;
 
-            //imageData[ri * scene.width() + ci] = toRGBA(glm::normalize(glm::vec4(direction[2], direction[3],direction[1],0)));
+            //imageData[ri * scene.width() + ci] = toRGBA(glm::normalize(glm::vec4(geodesicEndDir[2], geodesicEndDir[3],0,0)));
 
             //std::cout << "geodesicEndPos: " << geodesicEndPos[0] << " " << geodesicEndPos[1] << " " << geodesicEndPos[2] << " " << geodesicEndPos[3] << "\n";
             //std::cout << "geodesicEndDir: " << geodesicEndDir[0] << " " << geodesicEndDir[1] << " " << geodesicEndDir[2] << " " << geodesicEndDir[3] << "\n";
