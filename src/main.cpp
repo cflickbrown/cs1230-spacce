@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // Calls our star generation method to populate the background.
     StarGenerator::generateStars(metaData);
 
     // Raytracing-relevant code starts here

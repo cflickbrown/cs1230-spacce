@@ -5,61 +5,81 @@
 
 namespace StarGenerator {
 
-// okay so you need a function to generate position first
-// then a function that generates the matrices and that will construct ScenePrimitives and put them in the data
-
 void generateStars(RenderData& renderData) {
 
-    // calls the position generation
-    // then generates matrices and pushes back
-
-    // glm::vec3 pos = generatePosition();
-    glm::vec3 pos(0, 0, 0);
-    generatePrimitive(renderData, pos);
+    std::vector<glm::vec3> positions;
+    generatePosition(positions);
+    generatePrimitive(renderData, positions);
 }
 
-glm::vec3 generatePosition() {
+glm::vec3 generatePosition(std::vector<glm::vec3>& positions) {
 
-    std::mt19937 generator;
-    generator.seed(1);
+    std::random_device rd;
+    std::mt19937 generator(rd());
+
+    // std::mt19937 generator();
+    // generator.seed(1);
 
     std::uniform_real_distribution<> distance(0.0f, 1.0f);
 
-    double x = distance(generator);
-    double y = distance(generator);
-    double z = distance(generator);
+    int gridDivisions = 5;
 
-    return glm::vec3(x, y, z);
+    float rangeMax = 5.0f;
+    float stepSize = (2 * rangeMax) / gridDivisions;
+
+    for (int i = 0; i < gridDivisions; i++) {
+        for (int j = 0; j < gridDivisions; j++) {
+            for (int k = 0; k < gridDivisions; k++) {
+
+                float xMin = -rangeMax + i * stepSize;
+                float xMax = xMin + stepSize;
+
+                float yMin = -rangeMax + j * stepSize;
+                float yMax = yMin + stepSize;
+
+                float zMin = -rangeMax + k * stepSize;
+                float zMax = zMin + stepSize;
+
+                float x = xMin + distance(generator) * (xMax - xMin);
+                float y = yMin + distance(generator) * (yMax - yMin);
+                float z = zMin + distance(generator) * (zMax - zMin);
+
+                positions.push_back(glm::vec3(x, y, z));
+            }
+        }
+    }
 }
 
-void generatePrimitive(RenderData& renderData, glm::vec3& pos) {
+void generatePrimitive(RenderData& renderData, std::vector<glm::vec3>& positions) {
 
-    // generate the matrix and make the primitive and add it to the data
+    for (int i = 0; i < positions.size(); i++) {
+        glm::mat4 ctm = glm::mat4(1.0f);
 
-    glm::mat4 ctm = glm::mat4(1.0f);
+        ctm = translate(ctm, positions[i]);
 
-    ctm = translate(ctm, pos);
+        ctm = scale(ctm, glm::vec3(0.5, 0.5, 0.5));
 
-    ScenePrimitive* star = new ScenePrimitive();
-    SceneMaterial &material = star->material;
-    material.clear();
-    star->type = PrimitiveType::PRIMITIVE_SPHERE;
+        ScenePrimitive* star = new ScenePrimitive();
+        SceneMaterial &material = star->material;
+        material.clear();
+        star->type = PrimitiveType::PRIMITIVE_SPHERE;
 
-    for (int i = 0; i < 3; i++) {
-        material.cAmbient[i] = 0.2;
+        for (int i = 0; i < 3; i++) {
+            material.cAmbient[i] = 0.2;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            material.cDiffuse[i] = 0.8;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            material.cSpecular[i] = 0.5;
+        }
+
+        material.shininess = 50.0f;
+
+        renderData.shapes.push_back(RenderShapeData(*star, ctm));
     }
-
-    for (int i = 0; i < 3; i++) {
-        material.cDiffuse[i] = 0.8;
-    }
-
-    for (int i = 0; i < 3; i++) {
-        material.cSpecular[i] = 0.5;
-    }
-
-    material.shininess = 50.0f;
-
-    renderData.shapes.push_back(RenderShapeData(*star, ctm));
 }
 
 }

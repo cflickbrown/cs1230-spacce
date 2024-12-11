@@ -8,8 +8,8 @@ namespace StarGenerator {
 
 void generateStars(RenderData& renderData);
 
-glm::vec3 generatePosition();
+glm::vec3 generatePosition(std::vector<glm::vec3>& positions);
 
-void generatePrimitive(RenderData& renderData, glm::vec3& pos);
+void generatePrimitive(RenderData& renderData, std::vector<glm::vec3>& positions);
 
 }
