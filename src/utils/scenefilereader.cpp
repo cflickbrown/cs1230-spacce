@@ -149,7 +149,7 @@ bool ScenefileReader::readJSON() {
  */
 bool ScenefileReader::parseGlobalData(const QJsonObject &globalData) {
     QStringList requiredFields = {"ambientCoeff", "diffuseCoeff", "specularCoeff"};
-    QStringList optionalFields = {"transparentCoeff"};
+    QStringList optionalFields = {"transparentCoeff", "skybox", "textureU", "textureV"};
     QStringList allFields = requiredFields + optionalFields;
     for (auto field : globalData.keys()) {
         if (!allFields.contains(field)) {
@@ -193,6 +193,23 @@ bool ScenefileReader::parseGlobalData(const QJsonObject &globalData) {
         else {
             std::cout << "globalData transparentCoeff must be a floating-point value" << std::endl;
             return false;
+        }
+    }
+
+    if (globalData.contains("skybox")) {
+        if (globalData.contains("skybox")) {
+            if (!globalData["skybox"].isString()) {
+                std::cout << "globalData skybox must be of type string" << std::endl;
+                return false;
+            }
+            std::filesystem::path basepath = std::filesystem::path(file_name).parent_path().parent_path();
+
+            std::filesystem::path fileRelativePath(globalData["skybox"].toString().toStdString());
+
+            m_globalData.skybox.filename = (basepath / fileRelativePath).string();
+            m_globalData.skybox.repeatU = globalData.contains("textureU") && globalData["textureU"].isDouble() ? globalData["textureU"].toDouble() : 1;
+            m_globalData.skybox.repeatV = globalData.contains("textureV") && globalData["textureV"].isDouble() ? globalData["textureV"].toDouble() : 1;
+            m_globalData.skybox.isUsed = true;
         }
     }
 
@@ -757,6 +774,8 @@ bool ScenefileReader::parseGroupData(const QJsonObject &object, SceneNode *node)
     return true;
 }
 
+
+
 bool ScenefileReader::parseGroups(const QJsonValue &groups, SceneNode *parent) {
     if (!groups.isArray()) {
         std::cout << "groups must be of type array" << std::endl;
@@ -845,6 +864,8 @@ bool ScenefileReader::parsePrimitive(const QJsonObject &prim, SceneNode *node) {
         primitive->type = PrimitiveType::PRIMITIVE_CYLINDER;
     else if (primType == "cone")
         primitive->type = PrimitiveType::PRIMITIVE_CONE;
+    else if (primType == "densitysphere")
+        primitive->type = PrimitiveType::PRIMITIVE_DENSITY_SPHERE;
     else if (primType == "mesh") {
         primitive->type = PrimitiveType::PRIMITIVE_MESH;
         if (!prim.contains("meshFile")) {

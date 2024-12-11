@@ -13,7 +13,7 @@
 class RayTraceScene
 {
 public:
-    RayTraceScene(int width, int height, const RenderData &metaData);
+    RayTraceScene(int width, int height, RenderData &metaData);
 
     // The getter of the width of the scene
     const int& width() const;
@@ -35,10 +35,11 @@ private:
 
     const int w;
     const int h;
-    const SceneGlobalData& globalData;
+    SceneGlobalData& globalData;
     Camera camera;
     std::vector<RenderShapeData> shapes;
     std::vector<SceneLightData> lights;
 
+    void setSkybox();
 
 };

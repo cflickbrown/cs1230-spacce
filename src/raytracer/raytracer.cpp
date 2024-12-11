@@ -35,6 +35,9 @@ IntersectionData findIntersectDataForShape(RenderShapeData shape, glm::vec4 orig
     case PrimitiveType::PRIMITIVE_CONE:
         currPrimitive = Cone(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
         break;
+    case PrimitiveType::PRIMITIVE_DENSITY_SPHERE:
+        currPrimitive = DensitySphere(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+        break;
     default:
         break;
     }
@@ -292,7 +295,37 @@ glm::vec4 RayTracer::PhongIllumination(glm::vec3  position,
     return illumination;
 }
 
+glm::vec4 getSkybox(glm::vec4 rayDirection, const RayTraceScene &scene) {
 
+    SceneGlobalData glob = scene.getGlobalData();
+
+    if(glob.skybox.isUsed) {
+        Image* skyboxText = glob.skyboxTexture;
+
+        glm::vec2 uvCoord = Sphere(PrimitiveType::PRIMITIVE_SPHERE, SceneMaterial(), "").getIntersectData(glm::vec4(0,0,0,0), -1.f *rayDirection).uvCoords;
+
+        int colIdx = (int)floor(fmin(fmax(0, uvCoord[0]), 1) * glob.skybox.repeatU * skyboxText->width) % skyboxText->width;
+        int rowIdx = (int)floor((1 - fmin(1, uvCoord[1])) * glob.skybox.repeatV * skyboxText->height) % skyboxText->height;
+
+        if(colIdx == glob.skybox.repeatU * skyboxText->width) {
+            colIdx -= 1;
+        }
+        if(rowIdx == glob.skybox.repeatV * skyboxText->height) {
+            rowIdx -= 1;
+        }
+
+        RGBA texturePixel = glob.skyboxTexture->data[(rowIdx * skyboxText->width) + colIdx];
+
+        float sbRed = (texturePixel.r/255.0);
+        float sbGreen = (texturePixel.g/255.0);
+        float sbBlue = (texturePixel.b/255.0);
+
+        return glm::vec4(sbRed, sbGreen, sbBlue, 1.f);
+
+    } else {
+        return BACKGROUND_COLOR;
+    }
+}
 
 glm::vec4 RayTracer::traceMarchOrBackground(glm::vec4 rayOrigin, glm::vec4 rayDirection, const RayTraceScene &scene, std::vector<RenderShapeData> relevantShapes, int droppedShapeIdx, int recLevel, float transparency) {
 
@@ -312,7 +345,7 @@ glm::vec4 RayTracer::traceMarchOrBackground(glm::vec4 rayOrigin, glm::vec4 rayDi
     }
 
     if(nearestIntShapeIdx < 0) {
-        return BACKGROUND_COLOR;
+        return getSkybox(rayDirection, scene);
     } else if (relevantShapes[nearestIntShapeIdx].primitive.material.solid) {
         return recurRayTrace(rayOrigin, rayDirection, scene, relevantShapes, droppedShapeIdx, recLevel);
     } else {
@@ -433,6 +466,9 @@ std::vector<float> findDensityDataForShapes(std::vector<RenderShapeData> shapes,
         case PrimitiveType::PRIMITIVE_CONE:
             currPrimitive = Cone(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
             break;
+        case PrimitiveType::PRIMITIVE_DENSITY_SPHERE:
+            currPrimitive = DensitySphere(shape.primitive.type, shape.primitive.material, shape.primitive.meshfile);
+            break;
         default:
             break;
         }
@@ -469,9 +505,9 @@ glm::vec4 RayTracer::recurRayMarch(glm::vec4 rayOrigin, glm::vec4 rayDirection, 
             return glm::vec4(1,0,0,1);
         }
         if(accContactDist > 0) {
-            return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + (pixelResult / accContactDist)), 1.f);
+            return glm::vec4(glm::vec3((getSkybox(rayDirection, scene) * transparency) + (pixelResult / accContactDist)), 1.f);
         } else {
-            return glm::vec4(glm::vec3((BACKGROUND_COLOR * transparency) + (pixelResult)), 1.f);
+            return glm::vec4(glm::vec3((getSkybox(rayDirection, scene) * transparency) + (pixelResult)), 1.f);
         }
     } else {
         std::vector<float> objectDensities(scene.getShapes().size());
