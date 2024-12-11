@@ -28,7 +28,7 @@ glm::mat4 BlackHole::getTetradBasis(float t, float r, float theta, float phi){
         1/(sqrt(1 - rs/r)), 0, 0, 0,
         0, sqrt(1 - (rs/r)), 0, 0,
         0, 0, rs/r, 0,
-        0, 0, 0, 1/(r*sin(theta+0.000001f))
+        0, 0, 0, 1/(r*sin(theta))
     };
     return tetradSet;
 }
