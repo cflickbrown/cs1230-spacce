@@ -1,30 +1,29 @@
 #include "utils/stargenerator.h"
 
-#include <random>
 #include <glm/gtx/transform.hpp>
 
 namespace StarGenerator {
 
 void generateStars(RenderData& renderData) {
 
-    std::vector<glm::vec3> positions;
-    generatePosition(positions);
-    generatePrimitive(renderData, positions);
-}
-
-glm::vec3 generatePosition(std::vector<glm::vec3>& positions) {
-
     std::random_device rd;
     std::mt19937 generator(rd());
 
-    // std::mt19937 generator();
-    // generator.seed(1);
+    // std::mt19937 generator;
+    // generator.seed(1230);
+
+    std::vector<glm::vec3> positions;
+    generatePosition(positions, generator);
+    generatePrimitive(generator, renderData, positions);
+}
+
+glm::vec3 generatePosition(std::vector<glm::vec3>& positions, std::mt19937& generator) {
 
     std::uniform_real_distribution<> distance(0.0f, 1.0f);
 
     int gridDivisions = 5;
 
-    float rangeMax = 5.0f;
+    float rangeMax = 3.0f;
     float stepSize = (2 * rangeMax) / gridDivisions;
 
     for (int i = 0; i < gridDivisions; i++) {
@@ -50,36 +49,91 @@ glm::vec3 generatePosition(std::vector<glm::vec3>& positions) {
     }
 }
 
-void generatePrimitive(RenderData& renderData, std::vector<glm::vec3>& positions) {
+float generateSize(std::mt19937& generator, std::normal_distribution<float>& size) {
+    return size(generator);
+}
+
+glm::vec3 generateColor(std::mt19937& generator, std::uniform_int_distribution<>& color) {
+    int choice = color(generator);
+
+    switch(choice) {
+    case 0:
+        return glm::vec3(1.0f, 1.0f, 1.0f); // white
+    case 1:
+        return glm::vec3(0.5f, 0.5f, 1.0f); // blue
+    case 2:
+        return glm::vec3(0.6f, 0.3f, 0.8f); // purple
+    case 3:
+        return glm::vec3(0.0f, 1.0f, 0.5f); // green
+    }
+}
+
+glm::vec2 generateIntensity(std::mt19937& generator,
+                            std::normal_distribution<float>& intensity,
+                            std::normal_distribution<float>& shine) {
+
+    float intensityVal = intensity(generator);
+    float shininess = shine(generator);
+
+    return glm::vec2(intensityVal, shininess);
+}
+
+void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vector<glm::vec3>& positions) {
+    std::normal_distribution<float> size(0.05, 0.05);
+
+    std::uniform_int_distribution<> colorChoice(0, 3);
+
+    std::normal_distribution<float> intensity(0.7, 0.5);
+    std::normal_distribution<float> shine(50, 10);
 
     for (int i = 0; i < positions.size(); i++) {
         glm::mat4 ctm = glm::mat4(1.0f);
-
         ctm = translate(ctm, positions[i]);
 
-        ctm = scale(ctm, glm::vec3(0.5, 0.5, 0.5));
+        float starSize = generateSize(generator, size);
+        glm::mat4 starCTM = scale(ctm, glm::vec3(starSize));
+        glm::mat4 glowCTM = scale(ctm, glm::vec3(starSize * 1.3));
 
         ScenePrimitive* star = new ScenePrimitive();
-        SceneMaterial &material = star->material;
-        material.clear();
+        SceneMaterial &starMat = star->material;
+        starMat.clear();
         star->type = PrimitiveType::PRIMITIVE_SPHERE;
 
+        ScenePrimitive* starGlow = new ScenePrimitive();
+        SceneMaterial &glowMat = starGlow->material;
+        glowMat.clear();
+        starGlow->type = PrimitiveType::PRIMITIVE_SPHERE;
+
+        glm::vec3 color = generateColor(generator, colorChoice);
+        glm::vec2 intensities = generateIntensity(generator, intensity, shine);
+
         for (int i = 0; i < 3; i++) {
-            material.cAmbient[i] = 0.2;
+            starMat.cAmbient[i] = color[i] * intensities[0];
+            glowMat.cAmbient[i] = color[i] * intensities[0];
         }
 
         for (int i = 0; i < 3; i++) {
-            material.cDiffuse[i] = 0.8;
+            starMat.cDiffuse[i] = color[i] * intensities[0];
+            glowMat.cDiffuse[i] = color[i] * intensities[0];
         }
 
         for (int i = 0; i < 3; i++) {
-            material.cSpecular[i] = 0.5;
+            starMat.cSpecular[i] = 1.0f;
         }
 
-        material.shininess = 50.0f;
+        starMat.shininess = intensities[1];
 
-        renderData.shapes.push_back(RenderShapeData(*star, ctm));
+        glowMat.solid = false;
+        glowMat.density = 0.1;
+
+        renderData.shapes.push_back(RenderShapeData(*star, starCTM));
+        renderData.shapes.push_back(RenderShapeData(*starGlow, glowCTM));
     }
+}
+
+float lighten(float color) {
+    float blend = 0.1f;
+    return (color * (1.0f - blend) + 1.0f * blend);
 }
 
 }

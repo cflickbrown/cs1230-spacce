@@ -11,7 +11,7 @@ RayTracer::RayTracer(Config config) :
 
 float TRANSPARENCY_THRESH = 0.001;
 int STEP_THRESH = 300;
-glm::vec4 BACKGROUND_COLOR = glm::vec4(1,1,1,1);
+glm::vec4 BACKGROUND_COLOR = glm::vec4(0, 0, 0, 0);
 
 IntersectionData findIntersectDataForShape(RenderShapeData shape, glm::vec4 origin, glm::vec4 direction) {
     glm::mat4 objSpaceConv = glm::inverse(shape.ctm);
