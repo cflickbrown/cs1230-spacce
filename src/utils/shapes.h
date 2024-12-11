@@ -15,97 +15,6 @@ float SOLID_ALPHA = 101;
 
 PerlinNoise P_NOISE = PerlinNoise();
 
-ScenePrimitive DensityCube(PrimitiveType type,
-                         SceneMaterial material,
-                         std::string meshfile) {
-    return ScenePrimitive {
-        type,
-        material,
-        meshfile,
-        [=](glm::vec4 p, glm::vec4 d) {
-            return IntersectionData();
-        },
-        [=](glm::vec4 p) {
-            //if point outside the object, then object does not add anything
-            if(p.x > 0.5 || p.x < -0.5 || p.y > 0.5 || p.y < -0.5 || p.z > 0.5 || p.z < -0.5) {
-                return 0.f;
-            }
-
-            return material.density;
-        }
-    };
-}
-
-
-ScenePrimitive DensitySphere(PrimitiveType type,
-                           SceneMaterial material,
-                           std::string meshfile) {
-    return ScenePrimitive {
-        type,
-        material,
-        meshfile,
-        [=](glm::vec4 p, glm::vec4 d) {
-            return IntersectionData();
-        },
-        [=](glm::vec4 p) {
-
-            //if point outside the object, then object does not add anything
-            if(sqrt((p.x * p.x) + (p.y * p.y) + (p.z * p.z)) > 0.5) {
-                return 0.f;
-            }
-
-            return material.density;
-        }
-    };
-}
-
-ScenePrimitive DensityCylinder(PrimitiveType type,
-                             SceneMaterial material,
-                             std::string meshfile) {
-    return ScenePrimitive {
-        type,
-        material,
-        meshfile,
-        [=](glm::vec4 p, glm::vec4 d) {
-            return IntersectionData();
-        },
-        [=](glm::vec4 p) {
-            //if point outside the object, then object does not add anything
-            if(sqrt((p.x * p.x) + (p.z * p.z)) > 0.5 || p.y < -0.5 || p.y > 0.5) {
-                return 0.f;
-            }
-
-            return material.density;
-        }
-    };
-}
-
-ScenePrimitive DensityCone(PrimitiveType type,
-                         SceneMaterial material,
-                         std::string meshfile) {
-    return ScenePrimitive {
-        type,
-        material,
-        meshfile,
-        [=](glm::vec4 p, glm::vec4 d) {
-            return IntersectionData();
-        },
-        [=](glm::vec4 p) {
-
-            //if point outside the object, then object does not add anything
-            if(sqrt((p.x * p.x) + (p.z * p.z)) > (0.5 - ((p.y + 0.5)/2)) || p.y < -0.5 || p.y > 0.5) {
-                return 0.f;
-            }
-
-            return material.density;
-        }
-    };
-}
-
-
-
-
-
 ScenePrimitive SolidCube(PrimitiveType type,
                          SceneMaterial material,
                          std::string meshfile) {
@@ -296,7 +205,7 @@ ScenePrimitive Sphere(PrimitiveType type,
                     uCoord = 0.5;
                 }
 
-                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord));
+                return IntersectionData(true, useRoot, glm::normalize(normAtPoint), glm::vec2(uCoord, vCoord), material.solid);
             } else if (discrim == 0.0) {
                 float useRoot = (-1.0 * valB + sqrt(discrim)) / (2.0 * valA);
 
@@ -524,5 +433,97 @@ ScenePrimitive Cone(PrimitiveType type,
         }
     };
 }
+
+
+
+ScenePrimitive DensityCube(PrimitiveType type,
+                           SceneMaterial material,
+                           std::string meshfile) {
+    return ScenePrimitive {
+        type,
+        material,
+        meshfile,
+        [=](glm::vec4 p, glm::vec4 d) {
+            return IntersectionData();
+        },
+        [=](glm::vec4 p) {
+            //if point outside the object, then object does not add anything
+            if(p.x > 0.5 || p.x < -0.5 || p.y > 0.5 || p.y < -0.5 || p.z > 0.5 || p.z < -0.5) {
+                return 0.f;
+            }
+
+            return material.density;
+        }
+    };
+}
+
+
+ScenePrimitive DensitySphere(PrimitiveType type,
+                             SceneMaterial material,
+                             std::string meshfile) {
+    return ScenePrimitive {
+        type,
+        material,
+        meshfile,
+        [=](glm::vec4 p, glm::vec4 d) {
+            return Sphere(type, material, meshfile).getIntersectData(p, d);;
+        },
+        [=](glm::vec4 p) {
+
+            //if point outside the object, then object does not add anything
+            float dist = sqrt((p.x * p.x) + (p.y * p.y) + (p.z * p.z));
+
+            if(dist >= 0.5) {
+                return 0.f;
+            }
+
+            return material.density * (1 - (dist * 2));
+        }
+    };
+}
+
+ScenePrimitive DensityCylinder(PrimitiveType type,
+                               SceneMaterial material,
+                               std::string meshfile) {
+    return ScenePrimitive {
+        type,
+        material,
+        meshfile,
+        [=](glm::vec4 p, glm::vec4 d) {
+            return IntersectionData();
+        },
+        [=](glm::vec4 p) {
+            //if point outside the object, then object does not add anything
+            if(sqrt((p.x * p.x) + (p.z * p.z)) > 0.5 || p.y < -0.5 || p.y > 0.5) {
+                return 0.f;
+            }
+
+            return material.density;
+        }
+    };
+}
+
+ScenePrimitive DensityCone(PrimitiveType type,
+                           SceneMaterial material,
+                           std::string meshfile) {
+    return ScenePrimitive {
+        type,
+        material,
+        meshfile,
+        [=](glm::vec4 p, glm::vec4 d) {
+            return IntersectionData();
+        },
+        [=](glm::vec4 p) {
+
+            //if point outside the object, then object does not add anything
+            if(sqrt((p.x * p.x) + (p.z * p.z)) > (0.5 - ((p.y + 0.5)/2)) || p.y < -0.5 || p.y > 0.5) {
+                return 0.f;
+            }
+
+            return material.density;
+        }
+    };
+}
+
 
 

@@ -2,7 +2,7 @@
 #include "raytracescene.h"
 #include "utils/sceneparser.h"
 
-RayTraceScene::RayTraceScene(int width, int height, const RenderData &metaData)
+RayTraceScene::RayTraceScene(int width, int height, RenderData &metaData)
     : w(width), h(height), globalData(metaData.globalData),
     camera(Camera()), lights(metaData.lights) {
 
@@ -26,6 +26,7 @@ RayTraceScene::RayTraceScene(int width, int height, const RenderData &metaData)
 
     RayTraceScene::shapes = tempShapes;
 
+    setSkybox();
 }
 
 const int& RayTraceScene::width() const {
@@ -50,4 +51,10 @@ const std::vector<RenderShapeData>& RayTraceScene::getShapes() const {
 
 const std::vector<SceneLightData>& RayTraceScene::getLights() const {
     return lights;
+}
+
+void RayTraceScene::setSkybox() {
+    if(globalData.skybox.isUsed) {
+        globalData.skyboxTexture = loadImageFromFile(globalData.skybox.filename);
+    }
 }

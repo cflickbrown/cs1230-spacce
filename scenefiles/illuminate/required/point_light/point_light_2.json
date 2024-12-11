@@ -4,7 +4,10 @@
     "ambientCoeff": 0.5,
     "diffuseCoeff": 0.5,
     "specularCoeff": 0.5,
-    "transparentCoeff": 0
+    "transparentCoeff": 0,
+    "skybox": "textures/spaceagain.png",
+    "textureU": 10.0,
+    "textureV": 10.0
   },
   "cameraData": {
     "position": [-6.0, 4.0, 4.0],
@@ -73,10 +76,12 @@
           "translate": [0.65, 0.0, -0.65],
           "primitives": [
             {
-              "type": "sphere",
+              "type": "densitysphere",
               "diffuse": [0.6, 0.8, 0.6],
               "specular": [1.0, 1.0, 1.0],
-              "shininess": 15.0
+              "shininess": 15.0,
+              "solid": false,
+              "density": 1.5
             }
           ]
         },
@@ -87,9 +92,7 @@
               "type": "cube",
               "diffuse": [0.7, 0.7, 0.7],
               "specular": [1.0, 1.0, 1.0],
-              "shininess": 15.0,
-              "solid": false,
-              "density": 1.5
+              "shininess": 15.0
             }
           ]
         },

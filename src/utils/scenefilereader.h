@@ -37,6 +37,8 @@ private:
     bool parseGroupData(const QJsonObject &object, SceneNode *node);
     bool parsePrimitive(const QJsonObject &prim, SceneNode *node);
     bool parseLightData(const QJsonObject &lightData, SceneNode *node);
+    bool parseSkybox(const QJsonObject &skyboxData);
+
 
     std::string file_name;
 
