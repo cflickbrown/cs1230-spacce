@@ -133,6 +133,7 @@ struct SceneMaterial {
     SceneFileMap bumpMap; // Not used
 
     float density = 10000;
+    bool solid = true;
 
     void clear()
     {
