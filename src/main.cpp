@@ -7,6 +7,7 @@
 #include "utils/sceneparser.h"
 #include "raytracer/raytracer.h"
 #include "raytracer/raytracescene.h"
+#include "utils/stargenerator.h"
 
 int main(int argc, char *argv[])
 {
@@ -36,6 +37,9 @@ int main(int argc, char *argv[])
         a.exit(1);
         return 1;
     }
+
+    // Calls our star generation method to populate the background.
+    StarGenerator::generateStars(metaData);
 
     // Raytracing-relevant code starts here
 
