@@ -4,10 +4,7 @@
     "ambientCoeff": 0.5,
     "diffuseCoeff": 0.5,
     "specularCoeff": 0.5,
-    "transparentCoeff": 0,
-    "skybox": "textures/spaceagain.png",
-    "textureU": 10.0,
-    "textureV": 10.0
+    "transparentCoeff": 0
   },
   "cameraData": {
     "position": [-6.0, 4.0, 4.0],
