@@ -17,7 +17,6 @@ Material:
 
 ## Outstanding Issues
 
-- The star generation consumes a significant amount of memory in some circumstances on some platforms, particularly on a Windows release build. 
 - No black hole :(
 - Edges of solid objects may not always be "captured" by raymarching, making them uneven.
 
