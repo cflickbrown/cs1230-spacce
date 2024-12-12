@@ -1,0 +1,467 @@
+{
+  
+  "name": "default",
+  "globalData": {
+    "ambientCoeff": 1,
+    "diffuseCoeff": 1,
+    "specularCoeff": 1,
+    "transparentCoeff": 0,
+    "skybox": "textures/spaceagain.png",
+    "textureU": 4.0,
+    "textureV": 4.0
+  },
+  "cameraData": {
+    "position": [
+      0,
+      0,
+      5
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "heightAngle": 45,
+    "look": [
+      0,
+      0,
+      -1
+    ]
+  },
+  "groups": [
+    {
+      
+      "name": "rocket",
+      "translate": [
+        0,
+        0.5,
+        0
+      ],
+      "rotate": [
+        28,
+        0,
+        -55,
+        50
+      ],
+      "scale": [
+        0.51,
+        0.51,
+        0.51
+      ],
+      "groups": [
+        {
+          
+          "name": "fire3",
+          "translate": [
+            -0.11,
+            -1.14,
+            0.31
+          ],
+          "rotate": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "scale": [
+            1.2,
+            2,
+            0.55
+          ],
+          "groups": [],
+          "primitives": [
+            {
+              "type": "cone",
+              "diffuse": [
+                0.6,
+                0.2,
+                0
+              ],
+              "specular": [
+                1,
+                1,
+                1
+              ],
+              "ambient": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "shininess": 1,
+              "solid": false, 
+              "density": 0.1}
+          ]
+        },
+        {
+          
+          "name": "fire2",
+          "translate": [
+            -0.26,
+            -0.97,
+            -0.06
+          ],
+          "rotate": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "scale": [
+            0.9,
+            2.8,
+            0.8
+          ],
+          "primitives": [
+            {
+              "type": "cone",
+              "diffuse": [
+                0.9,
+                0.7,
+                0.2
+              ],
+              "specular": [
+                1,
+                1,
+                1
+              ],
+              "ambient": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "shininess": 1,
+              "solid": false, 
+              "density": 0.1}
+          ]
+        },
+        {
+          
+          "name": "fire1",
+          "translate": [
+            0.26,
+            -1.03,
+            0
+          ],
+          "rotate": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "scale": [
+            0.5,
+            2.5,
+            0.7
+          ],
+          "primitives": [
+            {
+              "type": "cone",
+              "diffuse": [
+                0.9,
+                0.9,
+                0
+              ],
+              "specular": [
+                1,
+                1,
+                1
+              ],
+              "ambient": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "shininess": 1, 
+            "solid": false, 
+          "density": 0.1}
+          ]
+        },
+        {
+          
+          "name": "window",
+          "translate": [
+            0,
+            0.29,
+            0.36
+          ],
+          "rotate": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "scale": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "primitives": [
+            {
+              "type": "sphere",
+              "diffuse": [
+                0,
+                0.6,
+                0.7
+              ],
+              "specular": [
+                0.8,
+                0.8,
+                0.8
+              ],
+              "ambient": [
+                0.0,
+                0.4,
+                0.5
+              ],
+              "shininess": 1}
+          ]
+        },
+        {
+          
+          "name": "fin",
+          "translate": [
+            0,
+            0,
+            0
+          ],
+          "rotate": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "scale": [
+            0.08,
+            1,
+            0.23
+          ],
+          "primitives": [],
+          "groups": [
+            {
+              
+              "name": "f3",
+              "translate": [
+                -5.96,
+                -0.75,
+                -1.18
+              ],
+              "rotate": [
+                0,
+                1,
+                0,
+                0
+              ],
+              "scale": [
+                1,
+                1,
+                1
+              ],
+              "primitives": [
+                {
+                  "type": "cube",
+                  "diffuse": [
+                    0.85,
+                    0.3,
+                    0.1
+                  ],
+                  "specular": [
+                    0.2,
+                    0.2,
+                    0.2
+                  ],
+                  "ambient": [
+                    0.8,
+                    0.3,
+                    0.1
+                  ],
+                  "shininess": 1}
+              ]
+            },
+            {
+              
+              "name": "f2",
+              "translate": [
+                5.87,
+                -0.77,
+                -1.36
+              ],
+              "rotate": [
+                0,
+                -180,
+                0,
+                0
+              ],
+              "scale": [
+                1,
+                1,
+                1
+              ],
+              "primitives": [
+                {
+                  "type": "cube",
+                  "diffuse": [
+                    0.85,
+                    0.3,
+                    0.1
+                  ],
+                  "specular": [
+                    0.2,
+                    0.2,
+                    0.2
+                  ],
+                  "ambient": [
+                    0.8,
+                    0.3,
+                    0.1
+                  ],
+                  "shininess": 1}
+              ]
+            },
+            {
+              
+              "name": "f1",
+              "translate": [
+                0,
+                -0.75,
+                2.47
+              ],
+              "rotate": [
+                0,
+                1,
+                0,
+                0
+              ],
+              "scale": [
+                1,
+                1,
+                1
+              ],
+              "primitives": [
+                {
+                  "type": "cube",
+                  "diffuse": [
+                    0.85,
+                    0.3,
+                    0.1
+                  ],
+                  "specular": [
+                    0.2,
+                    0.2,
+                    0.2
+                  ],
+                  "ambient": [
+                    0.8,
+                    0.3,
+                    0.1
+                  ],
+                  "shininess": 1}
+              ]
+            }
+          ]
+        },
+        {
+          
+          "name": "body",
+          "translate": [
+            0,
+            0,
+            0
+          ],
+          "rotate": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1.57,
+            1
+          ],
+          "primitives": [
+            {
+              "type": "cylinder",
+              "diffuse": [
+                0.8,
+                0.8,
+                0.8
+              ],
+              "specular": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "ambient": [
+                0.2,
+                0.2,
+                0.2
+              ],
+              "shininess": 1}
+          ]
+        },
+        {
+          
+          "name": "top",
+          "translate": [
+            0,
+            1.28,
+            0
+          ],
+          "rotate": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "primitives": [
+            {
+              "type": "cone",
+              "diffuse": [
+                0.6,
+                0.6,
+                0.6
+              ],
+              "specular": [
+                0.3,
+                0.3,
+                0.3
+              ],
+              "ambient": [
+                0.1,
+                0.1,
+                0.1
+              ],
+              "shininess": 1}
+          ]
+        }
+      ],
+      "primitives": []
+    },
+    {
+      "name": "Lights",
+      "lights": [
+        {
+          "color": [
+            1,
+            1,
+            1
+          ],
+          "type": "point",
+          "attenuationCoeff": [
+            0,
+            0,
+            0
+          ]}
+      ],
+      "translate": [
+        1,
+        1,
+        2
+      ]}
+  ]
+}

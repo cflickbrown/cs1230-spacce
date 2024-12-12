@@ -134,9 +134,6 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
 
         renderData.shapes.push_back(RenderShapeData(star, starCTM));
         renderData.shapes.push_back(RenderShapeData(starGlow, glowCTM));
-
-        // delete star;
-        // delete starGlow;
     }
 }
 
