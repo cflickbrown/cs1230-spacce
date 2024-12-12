@@ -477,7 +477,9 @@ ScenePrimitive DensitySphere(PrimitiveType type,
                 return 0.f;
             }
 
-            return material.density * (1 - (dist * 2));
+            float res = P_NOISE.computePerlin3d(p.x, p.y, p.z);
+
+            return res;
         }
     };
 }

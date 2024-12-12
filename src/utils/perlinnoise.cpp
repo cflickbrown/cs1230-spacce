@@ -14,14 +14,14 @@ PerlinNoise::PerlinNoise() {
     m_randVecLookup.reserve(m_lookupSize);
 
     // Initialize random number generator
-    std::srand(20);
+    std::srand(30);
 
     // Populate random vector lookup table
     for (int i = 0; i < m_lookupSize; i++)
     {
-        m_randVecLookup.push_back(glm::vec3(std::rand() * 2.0 / RAND_MAX - 1.0,
-                                            std::rand() * 2.0 / RAND_MAX - 1.0,
-                                            std::rand() * 2.0 / RAND_MAX - 1.0));
+        m_randVecLookup.push_back(glm::vec3(std::rand() * 2.0 / (float)RAND_MAX - 1,
+                                            std::rand() * 2.0 / (float)RAND_MAX - 1,
+                                            std::rand() * 2.0 / (float)RAND_MAX - 1));
     }
 }
 
@@ -80,10 +80,10 @@ float PerlinNoise::computePerlin3d(float x, float y, float z) {
 
     // Task 5: Debug this line to properly use your interpolation function to produce the correct value
 
-    return interpolate(
+    return abs(interpolate(
             interpolate(interpolate(G, H, x - xInt), interpolate(E, F, x - xInt), y - yInt),
             interpolate(interpolate(C, D, x - xInt), interpolate(A, B, x - xInt), y - yInt),
-            z - zInt);
+               z - zInt))/1.2;
     //change: C, D flipped, 0.5 -> dx or dy
 
     // Return 0 as a placeholder
