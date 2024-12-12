@@ -12,16 +12,18 @@ void generateStars(RenderData& renderData) {
     // std::mt19937 generator;
     // generator.seed(1230);
 
+    PerlinNoise noise = PerlinNoise();
+
     std::vector<glm::vec3> positions;
-    generatePosition(positions, generator);
-    generatePrimitive(generator, renderData, positions);
+    generatePosition(positions, generator, noise);
+    generatePrimitive(generator, noise, renderData, positions);
 }
 
-glm::vec3 generatePosition(std::vector<glm::vec3>& positions, std::mt19937& generator) {
+void generatePosition(std::vector<glm::vec3>& positions, std::mt19937& generator, PerlinNoise noise) {
 
     std::uniform_real_distribution<> distance(0.0f, 1.0f);
 
-    int gridDivisions = 5;
+    int gridDivisions = 9;
 
     float rangeMax = 3.0f;
     float stepSize = (2 * rangeMax) / gridDivisions;
@@ -43,7 +45,11 @@ glm::vec3 generatePosition(std::vector<glm::vec3>& positions, std::mt19937& gene
                 float y = yMin + distance(generator) * (yMax - yMin);
                 float z = zMin + distance(generator) * (zMax - zMin);
 
-                positions.push_back(glm::vec3(x, y, z));
+                float probability = noise.computePerlin3d(x, y, z);
+
+                if (distance(generator) < probability) {
+                    positions.push_back(glm::vec3(x, y, z));
+                }
             }
         }
     }
@@ -67,12 +73,30 @@ glm::vec3 generateColor(std::mt19937& generator, std::uniform_int_distribution<>
         return glm::vec3(1.0f, 0.5f, 0.5f); // red
     case 4:
         return glm::vec3(1.0f, 0.3f, 0.8f); // purple-y red
+    default:
+        return glm::vec3(1.0f, 1.0f, 1.0f);
     }
 }
 
-glm::vec2 generateIntensity(std::mt19937& generator,
-                            std::normal_distribution<float>& intensity,
-                            std::normal_distribution<float>& shine) {
+glm::vec2 generateIntensity(std::mt19937& generator, PerlinNoise noise, glm::vec3 position) {
+
+    float noiseVal = noise.computePerlin3d(position.x, position.y, position.z);
+
+    if (noiseVal < 0.1f) {
+        return getIntensity(generator, 0.3, 0.1, 15, 5);
+    }
+    else if (noiseVal < 0.3f) {
+        return getIntensity(generator, 0.5, 0.2, 50, 10);
+
+    }
+    else if (noiseVal < 1.0f) {
+        return getIntensity(generator, 0.8, 0.15, 80, 15);
+    }
+}
+
+glm::vec2 getIntensity(std::mt19937& generator, float intensityMean, float intensitySD, float shineMean, float shineSD) {
+    std::normal_distribution<float> intensity(intensityMean, intensitySD);
+    std::normal_distribution<float> shine(shineMean, shineSD);
 
     float intensityVal = intensity(generator);
     float shininess = shine(generator);
@@ -80,13 +104,10 @@ glm::vec2 generateIntensity(std::mt19937& generator,
     return glm::vec2(intensityVal, shininess);
 }
 
-void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vector<glm::vec3>& positions) {
-    std::normal_distribution<float> size(0.04, 0.03);
+void generatePrimitive(std::mt19937& generator, PerlinNoise noise, RenderData& renderData, std::vector<glm::vec3>& positions) {
+    std::normal_distribution<float> size(0.04, 0.02);
 
     std::uniform_int_distribution<> colorChoice(0, 4);
-
-    std::normal_distribution<float> intensity(0.7, 0.5);
-    std::normal_distribution<float> shine(50, 10);
 
     for (int i = 0; i < positions.size(); i++) {
         glm::mat4 ctm = glm::mat4(1.0f);
@@ -103,7 +124,7 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
         ScenePrimitive star;
         SceneMaterial &starMat = star.material;
         starMat.clear();
-        star.type = PrimitiveType::PRIMITIVE_CUBE;
+        star.type = PrimitiveType::PRIMITIVE_SPHERE;
 
         ScenePrimitive starGlow;
         SceneMaterial &glowMat = starGlow.material;
@@ -111,7 +132,7 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
         starGlow.type = PrimitiveType::PRIMITIVE_CUBE;
 
         glm::vec3 color = generateColor(generator, colorChoice);
-        glm::vec2 intensities = generateIntensity(generator, intensity, shine);
+        glm::vec2 intensities = generateIntensity(generator, noise, positions[i]);
 
         for (int i = 0; i < 3; i++) {
             starMat.cAmbient[i] = color[i] * intensities[0];
@@ -130,7 +151,7 @@ void generatePrimitive(std::mt19937& generator, RenderData& renderData, std::vec
         starMat.shininess = intensities[1];
 
         glowMat.solid = false;
-        glowMat.density = 0.1;
+        glowMat.density = 0.2;
 
         renderData.shapes.push_back(RenderShapeData(star, starCTM));
         renderData.shapes.push_back(RenderShapeData(starGlow, glowCTM));
